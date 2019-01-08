@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import 'run_interactive_codemod.dart' show runInteractiveCodemod;
 import 'util.dart' show pathLooksLikeCode;
 
-/// A representation of query that should return a particular set of files.
+/// A representation of a query that should return a particular set of files.
 ///
 /// Required as an argument for [runInteractiveCodemod].
 ///
