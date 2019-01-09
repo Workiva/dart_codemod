@@ -1,6 +1,15 @@
+/// To run this example:
+///     $ cd example
+///     $ dart deprecated_remover.dart
+library dart_codemod.example.deprecated_remover;
+
+import 'dart:io';
+
 import 'package:analyzer/analyzer.dart';
 import 'package:codemod/codemod.dart';
 
+/// Suggestor that generates deletion patches for all deprecated declarations
+/// (i.e. classes, constructors, variables, methods, etc.).
 class DeprecatedRemover extends GeneralizingAstVisitor
     with AstVisitingSuggestorMixin {
   static bool isDeprecated(AnnotatedNode node) =>
@@ -16,8 +25,10 @@ class DeprecatedRemover extends GeneralizingAstVisitor
   }
 }
 
-void main(List<String> args) => runInteractiveCodemod(
-      FileQuery.cwd(pathFilter: isDartFile),
-      DeprecatedRemover(),
-      args: args,
-    );
+void main(List<String> args) {
+  exitCode = runInteractiveCodemod(
+    FileQuery.dir(path: 'deprecated_remover_fixtures/', pathFilter: isDartFile),
+    DeprecatedRemover(),
+    args: args,
+  );
+}

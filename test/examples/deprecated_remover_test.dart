@@ -19,7 +19,7 @@ class DeprecatedRemover extends GeneralizingAstVisitor
 }
 
 void main() {
-  group('DeprecatedRemover', () {
+  group('Examples: DeprecatedRemover', () {
     test('removes deprecated variable', () {
       final sourceFile = SourceFile.fromString('''
 // Not deprecated.

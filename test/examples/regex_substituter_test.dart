@@ -1,21 +1,13 @@
-/// To run this example:
-///     $ cd example
-///     $ dart regex_substituter.dart
-library dart_codemod.example.regex_substituter;
-
-import 'dart:io';
-
+@TestOn('vm')
 import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
+import 'package:test/test.dart';
 
-/// Pattern that matches a dependency version constraint line for the `codemod`
-/// package, with the first capture group being the constraint.
 final RegExp pattern = RegExp(
   r'''^\s*codemod:\s*([\d\s"'<>=^.]+)\s*$''',
   multiLine: true,
 );
 
-/// The version constraint that `codemod` entries should be updated to.
 const String targetConstraint = '^1.0.0';
 
 class RegexSubstituter implements Suggestor {
@@ -39,10 +31,20 @@ class RegexSubstituter implements Suggestor {
   }
 }
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
-    FileQuery.single('regex_substituter_fixtures/pubspec.yaml'),
-    RegexSubstituter(),
-    args: args,
-  );
+void main() {
+  group('Examples: RegexSubstituter', () {
+    test('updates `codemod` version', () {
+      final sourceFile = SourceFile.fromString('''
+dependencies:
+  codemod: ^0.2.0
+''');
+      final expectedOutput = '''
+dependencies:
+  codemod: ^1.0.0
+''';
+      final patches = RegexSubstituter().generatePatches(sourceFile);
+      expect(patches, hasLength(1));
+      expect(applyPatches(sourceFile, patches), expectedOutput);
+    });
+  });
 }

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'run_interactive_codemod.dart' show runInteractiveCodemod;
 import 'util.dart' show pathLooksLikeCode;
@@ -10,11 +10,12 @@ import 'util.dart' show pathLooksLikeCode;
 /// Required as an argument for [runInteractiveCodemod].
 ///
 /// Use the named constructors to easily build file queries:
-///     FileQuery.cwd(pathFilter: (path) => path.endsWith('.md'));
-///     FileQuery.dir('example/', recursive: true);
+///     FileQuery.dir(pathFilter: (path) => path.endsWith('.md'));
+///     FileQuery.dir(path: 'example/', recursive: true);
 ///     FileQuery.single('lib/src/foo.dart');
 abstract class FileQuery {
-  /// Constructs a query for files in the current working directory.
+  /// Constructs a query for files in the directory located at [path], or the
+  /// current working directory if no [path] is given.
   ///
   /// If [followLinks] is true, symlinks will be followed, otherwise they will
   /// be skipped.
@@ -23,37 +24,19 @@ abstract class FileQuery {
   ///
   /// If a [pathFilter] is provided, it will be called for each file path. Any
   /// file path for which the filter does not return true will be excluded.
-  factory FileQuery.cwd({
+  factory FileQuery.dir({
+    String path,
     bool followLinks = false,
     bool Function(String path) pathFilter,
     bool recursive = false,
   }) =>
-      _FilesInDirQuery(path.current,
+      _FilesInDirQuery(
+          path: path,
           followLinks: followLinks,
           pathFilter: pathFilter,
           recursive: recursive);
 
-  /// Constructs a query for files in the directory located at [dirPath].
-  ///
-  /// If [followLinks] is true, symlinks will be followed, otherwise they will
-  /// be skipped.
-  ///
-  /// If [recursive] is true, the query will recurse into subdirectories.
-  ///
-  /// If a [pathFilter] is provided, it will be called for each file path. Any
-  /// file path for which the filter does not return true will be excluded.
-  factory FileQuery.dir(
-    String dirPath, {
-    bool followLinks = false,
-    bool Function(String path) pathFilter,
-    bool recursive = false,
-  }) =>
-      _FilesInDirQuery(dirPath,
-          followLinks: followLinks,
-          pathFilter: pathFilter,
-          recursive: recursive);
-
-  /// Constructs a simple query that returns a single [filePath].
+  /// Constructs a query that returns a single [filePath].
   factory FileQuery.single(String filePath) => new _SingleFileQuery(filePath);
 
   /// The primary target for this query (either a path to a file or to a parent
@@ -109,8 +92,12 @@ class _FilesInDirQuery implements FileQuery {
   /// Whether or not to recurse into subdirectories when listing files.
   final bool recursive;
 
-  _FilesInDirQuery(this.dirPath,
-      {this.followLinks = false, this.pathFilter, this.recursive = false});
+  _FilesInDirQuery(
+      {String path,
+      this.followLinks = false,
+      this.pathFilter,
+      this.recursive = false})
+      : dirPath = path ?? p.current;
 
   @override
   Iterable<String> generateFilePaths() sync* {
@@ -120,7 +107,7 @@ class _FilesInDirQuery implements FileQuery {
       if (fse is! File) {
         continue;
       }
-      final filePath = path.relative(fse.absolute.path);
+      final filePath = p.relative(fse.absolute.path);
       if (!pathLooksLikeCode(filePath)) {
         continue;
       }

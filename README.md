@@ -56,15 +56,15 @@ missing, yields a `Patch` that inserts it at the beginning of the file.
 import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
 
-const String licenseHeader = '''
-// All rights reserved.
+final String licenseHeader = '''
+// Lorem ispum license.
 // 2018-2019
 ''';
 
 class LicenseHeaderInserter implements Suggestor {
   @override
   bool shouldSkip(String sourceFileContents) =>
-    sourceFileContents.startsWith(licenseHeader);
+      sourceFileContents.trimLeft().startsWith(licenseHeader);
 
   @override
   Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
@@ -99,10 +99,12 @@ import 'package:source_span/source_span.dart';
 
 /// Pattern that matches a dependency version constraint line for the `codemod`
 /// package, with the first capture group being the constraint.
-final RegExp pattern = RegExp(r'''^\s*codemod:\s*([\d\s"'<>=^.]+)$''');
+final RegExp pattern = RegExp(
+  r'''^\s*codemod:\s*([\d\s"'<>=^.]+)\s*$''',
+  multiLine: true,
+);
 
-/// The version constraint that `codemod` entries in `pubspec.yaml` should be
-/// updated to.
+/// The version constraint that `codemod` entries should be updated to.
 const String targetConstraint = '^1.0.0';
 
 class RegexSubstituter implements Suggestor {
@@ -115,7 +117,7 @@ class RegexSubstituter implements Suggestor {
     for (final match in pattern.allMatches(contents)) {
       final line = match.group(0);
       final constraint = match.group(1);
-      final updated = line.replaceFirst(constraint, targetConstraint);
+      final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
 
       yield Patch(
         sourceFile,
@@ -143,9 +145,8 @@ import 'package:codemod/codemod.dart';
 
 class DeprecatedRemover extends GeneralizingAstVisitor
     with AstVisitingSuggestorMixin {
-
   static bool isDeprecated(AnnotatedNode node) =>
-    node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
+      node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
 
   @override
   visitDeclaration(Declaration node) {
@@ -195,37 +196,46 @@ If we were to run the 3 suggestor examples from above, it would like like so:
 **Regex Substituter:**
 
 ```dart
+import 'dart:io';
 import 'package:codemod/codemod.dart';
 
-void main(List<String> args) => runInteractiveCodemod(
-      FileQuery.single('pubspec.yaml'),
-      RegexSubstituter(),
-      args: args,
-    );
+void main(List<String> args) {
+  exitCode = runInteractiveCodemod(
+    FileQuery.single('pubspec.yaml'),
+    RegexSubstituter(),
+    args: args,
+  );
+}
 ```
 
 **License Header Inserter:**
 
 ```dart
+import 'dart:io';
 import 'package:codemod/codemod.dart';
 
-void main(List<String> args) => runInteractiveCodemod(
-      FileQuery.dir('lib/', pathFilter: isDartFile),
-      LicenseHeaderInserter(),
-      args: args,
-    );
+void main(List<String> args) {
+  exitCode = runInteractiveCodemod(
+    FileQuery.dir(pathFilter: isDartFile),
+    LicenseHeaderInserter(),
+    args: args,
+  );
+}
 ```
 
 **Deprecated Remover:**
 
 ```dart
+import 'dart:io';
 import 'package:codemod/codemod.dart';
 
-void main(List<String> args) => runInteractiveCodemod(
-      FileQuery.cwd(pathFilter: isDartFile),
-      DeprecatedRemover(),
-      args: args,
-    );
+void main(List<String> args) {
+  exitCode = runInteractiveCodemod(
+    FileQuery.dir(pathFilter: isDartFile),
+    DeprecatedRemover(),
+    args: args,
+  );
+}
 ```
 
 Run the `.dart` file directly or package it up as an executable and publish it
@@ -240,11 +250,12 @@ provided by this library:
   `AggregateSuggestor`:
 
     ```dart
+    import 'dart:io';
     import 'package:codemod/codemod.dart';
 
-    void main() {
+    void main(List<String> args) {
       final query = ...;
-      runInteractiveCodemod(
+      exitCode = runInteractiveCodemod(
         query,
         AggregateSuggestor(
           SuggestorA(),
@@ -257,16 +268,18 @@ provided by this library:
 - Run multiple suggestors (or aggregate suggestors) sequentially:
 
     ```dart
+    import 'dart:io';
     import 'package:codemod/codemod.dart';
 
-    void main() {
+    void main(List<String> args) {
       final query = ...;
-      runInterativeCodemodSequence(
+      exitCode = runInterativeCodemodSequence(
         query,
         [
           PhaseOneSuggestor(),
           PhaseTwoSuggestor(),
         ],
+        args: args,
       );
     }
     ```

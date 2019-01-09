@@ -1,0 +1,6 @@
+name: regex_substituter_example
+private: true
+version: 0.0.0
+
+dependencies:
+  codemod: ^0.1.0

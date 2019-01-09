@@ -1,20 +1,13 @@
-/// To run this example:
-///     $ cd example
-///     $ dart license_header_inserter.dart
-library dart_codemod.example.license_header_inserter;
-
-import 'dart:io';
-
+@TestOn('vm')
 import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
+import 'package:test/test.dart';
 
 final String licenseHeader = '''
 // Lorem ispum license.
 // 2018-2019
 ''';
 
-/// Suggestor that generates patches to insert a license header at the beginning
-/// of every file that is missing such a header.
 class LicenseHeaderInserter implements Suggestor {
   @override
   bool shouldSkip(String sourceFileContents) =>
@@ -40,10 +33,19 @@ class LicenseHeaderInserter implements Suggestor {
   }
 }
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
-    FileQuery.dir(path: 'license_header_fixtures/', pathFilter: isDartFile),
-    LicenseHeaderInserter(),
-    args: args,
-  );
+void main() {
+  group('Examples: LicenseHeaderInserter', () {
+    test('inserts missing header', () {
+      final sourceFile = SourceFile.fromString('library foo;');
+      final expectedOutput = '${licenseHeader}library foo;' '';
+      final patches = LicenseHeaderInserter().generatePatches(sourceFile);
+      expect(patches, hasLength(1));
+      expect(applyPatches(sourceFile, patches), expectedOutput);
+    });
+
+    test('should skip if header is already present', () {
+      expect(LicenseHeaderInserter().shouldSkip('${licenseHeader}library foo;'),
+          isTrue);
+    });
+  });
 }

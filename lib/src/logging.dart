@@ -36,14 +36,24 @@ import 'package:io/ansi.dart';
 import 'package:logging/logging.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+/// Logger to be used for all error and debug logs in this package.
 final Logger logger = Logger('codemod');
 
-Function(LogRecord) stderrLogListener({bool assumeTty, bool verbose}) =>
-    (record) => overrideAnsiOutput(assumeTty == true || ansiOutputEnabled, () {
-          _stderrLogListener(record, verbose: verbose ?? false);
+/// Returns a listener function for the [Logger.onRecord] stream that writes all
+/// [LogRecord]s to the given [sink].
+///
+/// If [ansiOutputEnabled] is true, logs will be highlighted based on the
+/// [Level] using ansi color codes.
+///
+/// If [verbose] is true, additional information will be included in the log
+/// messages including stack traces, logger name, and extra newlines.
+Function(LogRecord) logListener(
+        {bool ansiOutputEnabled, IOSink sink, bool verbose}) =>
+    (record) => overrideAnsiOutput(ansiOutputEnabled == true, () {
+          _logListener(record, sink: sink, verbose: verbose ?? false);
         });
 
-void _stderrLogListener(LogRecord record, {bool verbose}) {
+void _logListener(LogRecord record, {IOSink sink, bool verbose}) {
   AnsiCode color;
   if (record.level < Level.WARNING) {
     color = cyan;
@@ -53,7 +63,6 @@ void _stderrLogListener(LogRecord record, {bool verbose}) {
     color = red;
   }
   final level = color.wrap('[${record.level}]');
-  final eraseLine = ansiOutputEnabled && !verbose ? '\x1b[2K\r' : '';
   var headerMessage = record.message;
   var blankLineCount = 0;
   if (headerMessage.startsWith('\n')) {
@@ -61,8 +70,7 @@ void _stderrLogListener(LogRecord record, {bool verbose}) {
         headerMessage.split('\n').takeWhile((line) => line.isEmpty).length;
     headerMessage = headerMessage.substring(blankLineCount);
   }
-  final header =
-      '$eraseLine$level ${_loggerName(record, verbose)}$headerMessage';
+  final header = '$level ${_loggerName(record, verbose)}$headerMessage';
   final lines = blankLineCount > 0
       ? (List<Object>.generate(blankLineCount, (_) => '')..add(header))
       : <Object>[header];
@@ -89,13 +97,13 @@ void _stderrLogListener(LogRecord record, {bool verbose}) {
   stderr.write(message);
 }
 
-/// Filter out the Logger names known to come from `build_runner` and splits the
+/// Filter out the Logger names known to come from `codemod` and splits the
 /// header for levels >= WARNING.
 String _loggerName(LogRecord record, bool verbose) {
-  var knownNames = const [
+  final knownNames = const [
     'codemod',
   ];
-  var maybeSplit = record.level >= Level.WARNING ? '\n' : '';
+  final maybeSplit = record.level >= Level.WARNING ? '\n' : '';
   return verbose || !knownNames.contains(record.loggerName)
       ? '${record.loggerName}:$maybeSplit'
       : '';
