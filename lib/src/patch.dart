@@ -133,14 +133,14 @@ class Patch implements Comparable<Patch> {
 
     void writeDiffLines(List<String> lines, String linePrefix, AnsiCode color) {
       for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
+        var line = color.wrap(lines[i]);
         if (i == 0) {
           line = patchPreContext + line;
         }
         if (i == lines.length - 1) {
           line = line + patchPostContext;
         }
-        buffer.writeln(color.wrap(linePrefix + line));
+        buffer.writeln(color.wrap(linePrefix) + line);
       }
     }
 
@@ -163,16 +163,16 @@ class Patch implements Comparable<Patch> {
   ///     "./lib/foo.dart:10-12"
   ///     "./lib/bar.dart:25"
   String renderRange() {
-    if (sourceSpan.start.line == sourceSpan.end.line - 1) {
-      return '${sourceSpan.sourceUrl}:${sourceSpan.start.line}';
+    if (startLine == endLine - 1) {
+      return '${sourceSpan.sourceUrl}:${startLine + 1}';
     }
-    return '${sourceSpan.sourceUrl}:${sourceSpan.start.line}-${sourceSpan.end.line}';
+    return '${sourceSpan.sourceUrl}:${startLine + 1}-${endLine}';
   }
 
   @override
-  String toString() => '<Patch: '
-      'on ${sourceFile.url?.path ?? '<unknown>'}'
-      'from ${sourceSpan.start.line + 1}:${sourceSpan.start.column + 1} '
-      'to ${sourceSpan.end.line + 1}:${sourceSpan.end.column + 1} '
+  String toString() => '<Patch:'
+      ' on ${sourceFile.url?.path ?? '<unknown>'}'
+      ' from ${sourceSpan.start.line + 1}:${sourceSpan.start.column + 1}'
+      ' to ${sourceSpan.end.line + 1}:${sourceSpan.end.column + 1}'
       '>';
 }

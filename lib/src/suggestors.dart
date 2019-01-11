@@ -25,6 +25,9 @@ import 'run_interactive_codemod.dart'
 /// the form of a [SourceFile] from the `source_span` package. Operating on this
 /// model makes it easy to create [Patch]es at specific offsets within the file.
 ///
+/// If either of these methods throw at any point, the runner will log the
+/// exception and will return early with a non-zero exit code.
+///
 /// For simple suggestors, it may be sufficient to implement this interface
 /// directly and operate on the source text manually (potentially by using
 /// regexes). An example of this would look like so:

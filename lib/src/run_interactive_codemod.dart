@@ -14,7 +14,7 @@ import 'util.dart';
 
 /// Interactively runs a "codemod" by using `stdout` to display a diff for each
 /// potential patch and `stdin` to accept input from the user on what to do with
-/// said patch.
+/// said patch; returns an appropriate exit code when complete.
 ///
 /// [query] will generate the set of file paths that will then be read and used
 /// to generate potential patches.
@@ -65,7 +65,12 @@ int runInteractiveCodemod(
   Iterable<String> args,
   bool defaultYes = false,
 }) =>
-    runInteractiveCodemodSequence(query, [suggestor], args: args);
+    runInteractiveCodemodSequence(
+      query,
+      [suggestor],
+      args: args,
+      defaultYes: defaultYes,
+    );
 
 /// Exactly the same as [runInteractiveCodemod] except that it runs all of the
 /// given [suggestors] sequentially (meaning that the set of files found by
@@ -150,8 +155,8 @@ int _runInteractiveCodemod(
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'];
   Logger.root.level = verbose ? Level.ALL : Level.INFO;
   Logger.root.onRecord.listen(logListener(
+    stderr,
     ansiOutputEnabled: stderr.supportsAnsiEscapes || stderrAssumeTty == true,
-    sink: stderr,
     verbose: verbose,
   ));
 
@@ -177,7 +182,15 @@ int _runInteractiveCodemod(
         return ExitCode.noInput.code;
       }
 
-      if (suggestor.shouldSkip(sourceText)) {
+      bool shouldSkip;
+      try {
+        shouldSkip = suggestor.shouldSkip(sourceText);
+      } catch (e, stackTrace) {
+        logger.severe(
+            'Suggestor.shouldSkip() threw unexpectedly.', e, stackTrace);
+        return ExitCode.software.code;
+      }
+      if (shouldSkip == true) {
         logger.fine('skipped');
         continue;
       }
@@ -185,53 +198,60 @@ int _runInteractiveCodemod(
       final sourceFile =
           new SourceFile.fromString(sourceText, url: Uri.file(filePath));
       final appliedPatches = <Patch>[];
-      for (final patch in suggestor.generatePatches(sourceFile)) {
-        if (patch.isNoop) {
-          // Patch suggested, but without any changes. This is probably an error.
-          logger.severe('Empty patch suggested: $patch');
-          return ExitCode.software.code;
-        }
 
-        stdout.write(terminalClear());
-        stdout.write(patch.renderRange());
-        stdout.writeln();
-
-        final diffSize = calculateDiffSize(stdout);
-        logger.fine('diff size: $diffSize');
-        stdout.write(patch.renderDiff(diffSize));
-        stdout.writeln();
-
-        final defaultChoice = defaultYes ? 'y' : 'n';
-        String choice;
-        if (!yesToAll) {
-          if (defaultYes) {
-            stdout.writeln('Accept change (y = yes [default], n = no, '
-                'A = yes to all, q = quit)? ');
-          } else {
-            stdout.writeln('Accept change (y = yes, n = no [default], '
-                'A = yes to all, q = quit)? ');
+      try {
+        for (final patch in suggestor.generatePatches(sourceFile)) {
+          if (patch.isNoop) {
+            // Patch suggested, but without any changes. This is probably an error.
+            logger.severe('Empty patch suggested: $patch');
+            return ExitCode.software.code;
           }
 
-          choice = prompt('ynAq', defaultChoice);
-        } else {
-          logger.fine('skipped prompt because yesToAll==true');
-          choice = 'y';
-        }
+          stdout.write(terminalClear());
+          stdout.write(patch.renderRange());
+          stdout.writeln();
 
-        if (choice == 'A') {
-          yesToAll = true;
-          choice = 'y';
+          final diffSize = calculateDiffSize(stdout);
+          logger.fine('diff size: $diffSize');
+          stdout.write(patch.renderDiff(diffSize));
+          stdout.writeln();
+
+          final defaultChoice = defaultYes ? 'y' : 'n';
+          String choice;
+          if (!yesToAll) {
+            if (defaultYes) {
+              stdout.writeln('Accept change (y = yes [default], n = no, '
+                  'A = yes to all, q = quit)? ');
+            } else {
+              stdout.writeln('Accept change (y = yes, n = no [default], '
+                  'A = yes to all, q = quit)? ');
+            }
+
+            choice = prompt('ynAq', defaultChoice);
+          } else {
+            logger.fine('skipped prompt because yesToAll==true');
+            choice = 'y';
+          }
+
+          if (choice == 'A') {
+            yesToAll = true;
+            choice = 'y';
+          }
+          if (choice == 'y') {
+            logger.fine('patch accepted: $patch');
+            appliedPatches.add(patch);
+          }
+          if (choice == 'q') {
+            logger.fine('applying patches');
+            applyPatchesAndSave(sourceFile, appliedPatches);
+            logger.fine('quitting');
+            return ExitCode.success.code;
+          }
         }
-        if (choice == 'y') {
-          logger.fine('patch accepted: $patch');
-          appliedPatches.add(patch);
-        }
-        if (choice == 'q') {
-          logger.fine('applying patches');
-          applyPatchesAndSave(sourceFile, appliedPatches);
-          logger.fine('quitting');
-          return ExitCode.success.code;
-        }
+      } catch (e, stackTrace) {
+        logger.severe(
+            'Suggestor.generatePatches() threw unexpectedly.', e, stackTrace);
+        return ExitCode.software.code;
       }
       logger.fine('applying patches');
       applyPatchesAndSave(sourceFile, appliedPatches);
