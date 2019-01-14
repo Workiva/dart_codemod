@@ -50,6 +50,19 @@ line 5;''';
         '',
       );
 
+      // >>>
+      // line 4;
+      // line 5;
+      // <<<
+      // line 4;
+      //
+      final eofDeletion = Patch(
+        sourceFile,
+        sourceFile.span(sourceFile.length - 'line 5;'.length),
+        '',
+      );
+
+      // Patch that overlaps with [replacement].
       final overlapsReplacement = Patch(
         sourceFile,
         sourceFile.span(11, 12),
@@ -85,6 +98,15 @@ line 3;
 l4;
 line 5;''');
       });
+
+      test('applies a deletion at end of file', () {
+        expect(applyPatches(sourceFile, [eofDeletion]), '''
+line 1;
+line 2;
+line 3;
+line 4;
+''');
+      }, skip: 'https://github.com/dart-lang/source_span/pull/28');
 
       test('applies multiple patches', () {
         expect(applyPatches(sourceFile, [insertion, replacement, deletion]), '''

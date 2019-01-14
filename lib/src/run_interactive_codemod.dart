@@ -142,6 +142,12 @@ final codemodArgParser = ArgParser()
         'Useful for scripts.',
   )
   ..addFlag(
+    'fail-on-changes',
+    negatable: false,
+    help: 'Returns a non-zero exit code if there are changes to be made. '
+        'Will not make any changes (i.e. this is a dry-run).',
+  )
+  ..addFlag(
     'stderr-assume-tty',
     negatable: false,
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
@@ -150,9 +156,14 @@ final codemodArgParser = ArgParser()
 int _runInteractiveCodemod(
     FileQuery query, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
     {bool defaultYes}) {
+  final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
+  final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
+  final verbose = parsedArgs['verbose'] ?? false;
+  var yesToAll = parsedArgs['yes-to-all'] ?? false;
+  defaultYes ??= false;
+  var numChanges = 0;
+
   // Pipe logs to stderr.
-  final verbose = parsedArgs['verbose'];
-  final stderrAssumeTty = parsedArgs['stderr-assume-tty'];
   Logger.root.level = verbose ? Level.ALL : Level.INFO;
   Logger.root.onRecord.listen(logListener(
     stderr,
@@ -165,10 +176,6 @@ int _runInteractiveCodemod(
     logger.severe('codemod target does not exist: ${query.target}');
     return ExitCode.noInput.code;
   }
-
-  defaultYes ??= false;
-  // Will be set to true if the user selects the "A = yes to all" option.
-  var yesToAll = parsedArgs['yes-to-all'] ?? false;
 
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
@@ -202,9 +209,17 @@ int _runInteractiveCodemod(
       try {
         for (final patch in suggestor.generatePatches(sourceFile)) {
           if (patch.isNoop) {
-            // Patch suggested, but without any changes. This is probably an error.
+            // Patch suggested, but without any changes. This is probably an
+            // error in the suggestor implementation.
             logger.severe('Empty patch suggested: $patch');
             return ExitCode.software.code;
+          }
+
+          if (failOnChanges) {
+            // In this mode, we only count the number of changes that would have
+            // been suggested instead of actually suggesting them.
+            numChanges++;
+            continue;
           }
 
           stdout.write(terminalClear());
@@ -253,10 +268,22 @@ int _runInteractiveCodemod(
             'Suggestor.generatePatches() threw unexpectedly.', e, stackTrace);
         return ExitCode.software.code;
       }
-      logger.fine('applying patches');
-      applyPatchesAndSave(sourceFile, appliedPatches);
+
+      if (!failOnChanges) {
+        logger.fine('applying patches');
+        applyPatchesAndSave(sourceFile, appliedPatches);
+      }
     }
   }
   logger.fine('done');
+
+  if (failOnChanges) {
+    if (numChanges > 0) {
+      stderr.writeln('$numChanges change(s) needed.');
+      return 1;
+    }
+    stdout.writeln('No changes needed.');
+  }
+
   return ExitCode.success.code;
 }

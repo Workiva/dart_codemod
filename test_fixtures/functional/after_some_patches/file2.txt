@@ -1,0 +1,2 @@
+<REPLACE>
+line 2
