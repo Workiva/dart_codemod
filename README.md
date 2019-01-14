@@ -18,7 +18,7 @@ apply code modifications and refactors via an interactive CLI. To that end,
 the following function is provided:
 
 ```dart
-void runInteractiveCodemod(FileQuery query, Suggestor suggestor);
+int runInteractiveCodemod(FileQuery query, Suggestor suggestor);
 ```
 
 Calling this will tell codemod to scan for files using `query`, which will
