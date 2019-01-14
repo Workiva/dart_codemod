@@ -9,7 +9,7 @@ Inspired by and based on [Facebook's `codemod` library][facebook-codemod].
 
 ## Demo
 
-> _TODO: insert a demo gif_
+![demo](images/demo.gif)
 
 ## How It Works
 
