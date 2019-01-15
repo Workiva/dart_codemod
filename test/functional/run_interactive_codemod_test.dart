@@ -92,16 +92,17 @@ Future<Null> testCodemod(
 }
 
 void expectProjectsMatch(String goldPath, String testPath) {
-  for (final fse in Directory(goldPath).listSync(recursive: true)) {
-    if (fse is File) {
-      final relPath = p.relative(fse.path, from: goldPath);
-      final other = File(p.join(testPath, relPath));
-      expect(
-        other.readAsStringSync(),
-        fse.readAsStringSync(),
-        reason: 'File contents mismatch: $relPath',
-      );
-    }
+  final sortedFiles =
+      Directory(goldPath).listSync(recursive: true).whereType<File>().toList();
+  sortedFiles.sort((a, b) => a.path.compareTo(b.path));
+  for (final file in sortedFiles) {
+    final relPath = p.relative(file.path, from: goldPath);
+    final other = File(p.join(testPath, relPath));
+    expect(
+      other.readAsStringSync(),
+      file.readAsStringSync(),
+      reason: 'File contents mismatch: $relPath',
+    );
   }
 }
 

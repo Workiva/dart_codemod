@@ -193,7 +193,8 @@ int _runInteractiveCodemod(
 
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
-    for (final filePath in query.generateFilePaths()) {
+    final filePaths = query.generateFilePaths().toList()..sort();
+    for (final filePath in filePaths) {
       logger.fine('file: $filePath');
       String sourceText;
       try {
