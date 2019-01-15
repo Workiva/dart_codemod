@@ -1,0 +1,16 @@
+language: dart
+
+dart:
+  - stable
+
+# Re-use downloaded pub packages everywhere.
+cache:
+  directories:
+    - $HOME/.pub-cache
+
+script:
+- dartfmt --set-exit-if-changed -w .
+- dartanalyzer .
+- pub run dependency_validator -i dart_style,pedantic
+- pub run test
+
