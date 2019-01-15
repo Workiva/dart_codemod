@@ -29,9 +29,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:io/ansi.dart';
 import 'package:logging/logging.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -48,12 +45,15 @@ final Logger logger = Logger('codemod');
 /// If [verbose] is true, additional information will be included in the log
 /// messages including stack traces, logger name, and extra newlines.
 Function(LogRecord) logListener(
-        {bool ansiOutputEnabled, IOSink sink, bool verbose}) =>
+  StringSink sink, {
+  bool ansiOutputEnabled,
+  bool verbose,
+}) =>
     (record) => overrideAnsiOutput(ansiOutputEnabled == true, () {
-          _logListener(record, sink: sink, verbose: verbose ?? false);
+          _logListener(record, sink, verbose: verbose ?? false);
         });
 
-void _logListener(LogRecord record, {IOSink sink, bool verbose}) {
+void _logListener(LogRecord record, StringSink sink, {bool verbose}) {
   AnsiCode color;
   if (record.level < Level.WARNING) {
     color = cyan;
@@ -83,18 +83,7 @@ void _logListener(LogRecord record, {IOSink sink, bool verbose}) {
     lines.add(Trace.from(record.stackTrace).terse);
   }
 
-  final message = StringBuffer(lines.join('\n'));
-
-  // We always add an extra newline at the end of each message, so it
-  // isn't multiline unless we see > 2 lines.
-  final multiLine = LineSplitter.split(message.toString()).length > 2;
-
-  if (record.level > Level.INFO || !ansiOutputEnabled || multiLine || verbose) {
-    // Add an extra line to the output so the last line isn't written over.
-    message.writeln('');
-  }
-
-  stderr.write(message);
+  sink.writeln(lines.join('\n'));
 }
 
 /// Filter out the Logger names known to come from `codemod` and splits the
@@ -103,8 +92,7 @@ String _loggerName(LogRecord record, bool verbose) {
   final knownNames = const [
     'codemod',
   ];
-  final maybeSplit = record.level >= Level.WARNING ? '\n' : '';
   return verbose || !knownNames.contains(record.loggerName)
-      ? '${record.loggerName}:$maybeSplit'
+      ? '${record.loggerName}: '
       : '';
 }

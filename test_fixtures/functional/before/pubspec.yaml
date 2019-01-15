@@ -1,0 +1,7 @@
+name: codemod_test_fixture
+version: 0.0.0
+private: true
+
+dev_dependencies:
+  codemod:
+    path: ../../../
