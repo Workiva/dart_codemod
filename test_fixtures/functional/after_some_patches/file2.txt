@@ -1,2 +1,4 @@
-<REPLACE>
+line 1
+<INSERT>
 line 2
+line 3
