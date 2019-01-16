@@ -1,6 +1,6 @@
 name: codemod
 private: true
-version: 0.0.0
+version: 0.1.0
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
