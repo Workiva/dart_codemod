@@ -172,7 +172,7 @@ class AggregateSuggestor implements Suggestor {
 ///         }
 ///       }
 ///     }
-mixin AstVisitingSuggestorMixin on AstVisitor implements Suggestor {
+abstract class AstVisitingSuggestorMixin implements AstVisitor, Suggestor {
   final List<Patch> _patches = [];
 
   SourceFile _sourceFile;

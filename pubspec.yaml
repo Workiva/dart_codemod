@@ -11,10 +11,10 @@ authors:
   - Evan Weible <evan.weible@workiva.com>
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ">=2.0.0 <3.0.0"
 
 dependencies:
-  analyzer: ^0.33.6+1
+  analyzer: ^0.33.3
   args: ^1.5.1
   io: ^0.3.3
   logging: ^0.11.3+2
