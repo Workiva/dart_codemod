@@ -1,6 +1,14 @@
 name: codemod
-private: true
 version: 0.1.0
+homepage: https://github.com/Workiva/dart_codemod
+
+description: >
+  Write and run automated code modifications on a codebase. Primarily geared
+  towards updating and refactoring Dart code, but can modify any files.
+
+authors:
+  - Workiva Client Platform Team <clientplatform@workiva.com>
+  - Evan Weible <evan.weible@workiva.com>
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
