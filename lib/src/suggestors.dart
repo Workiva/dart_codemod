@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import 'package:analyzer/analyzer.dart';
+import 'package:meta/meta.dart';
 import 'package:source_span/source_span.dart';
 
 import 'patch.dart';
@@ -120,9 +121,12 @@ abstract class Suggestor {
 ///       ]),
 ///     );
 class AggregateSuggestor implements Suggestor {
-  final List<Suggestor> _suggestors;
+  final Iterable<Suggestor> _suggestors;
 
   AggregateSuggestor(Iterable<Suggestor> suggestors) : _suggestors = suggestors;
+
+  @visibleForTesting
+  Iterable<Suggestor> get aggregatedSuggestors => _suggestors.toList();
 
   @override
   Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
@@ -136,7 +140,7 @@ class AggregateSuggestor implements Suggestor {
   }
 
   @override
-  bool shouldSkip(String sourceFileContents) => false;
+  bool shouldSkip(_) => false;
 }
 
 /// Mixin that implements the [Suggestor] interface and makes it easier to write
