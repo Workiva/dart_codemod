@@ -1,5 +1,8 @@
 # codemod for Dart
 
+[![Pub](https://img.shields.io/pub/v/codemod.svg)](https://pub.dartlang.org/packages/codemod)
+[![Build Status](https://travis-ci.org/Workiva/dart_codemod.svg?branch=master)](https://travis-ci.org/Workiva/dart_codemod)
+
 A library that makes it easy to write and run automated code modifications
 on a codebase. Primarily geared towards updating/refactoring Dart code by
 leveraging the [analyzer][analyzer] package's APIs for parsing and traversing
