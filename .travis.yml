@@ -9,7 +9,7 @@ cache:
     - $HOME/.pub-cache
 
 script:
-- dartfmt --set-exit-if-changed -w .
+- pub run dart_dev format --check
 - dartanalyzer .
 - pub run dependency_validator -i dart_style,pedantic
 - pub run test
