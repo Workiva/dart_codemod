@@ -260,10 +260,10 @@ provided by this library:
       final query = ...;
       exitCode = runInteractiveCodemod(
         query,
-        AggregateSuggestor(
+        AggregateSuggestor([
           SuggestorA(),
           SuggestorB(),
-        ),
+        ]),
       );
     }
     ```
