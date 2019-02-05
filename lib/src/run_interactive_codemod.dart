@@ -144,7 +144,8 @@ int runInteractiveCodemodSequence(
     return overrideAnsiOutput<int>(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(query, suggestors, parsedArgs,
-            defaultYes: defaultYes, changesRequiredOutput: changesRequiredOutput));
+            defaultYes: defaultYes,
+            changesRequiredOutput: changesRequiredOutput));
   } catch (error, stackTrace) {
     stderr..writeln('Uncaught exception:')..writeln(error)..writeln(stackTrace);
     return ExitCode.software.code;

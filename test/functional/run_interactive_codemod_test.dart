@@ -108,14 +108,15 @@ void expectProjectsMatch(String goldPath, String testPath) {
 
 void main() {
   group('runInteractiveCodemod', () {
-    testCodemod('--help outputs usage help text', _afterNoPatches, 
+    testCodemod('--help outputs usage help text', _afterNoPatches,
         args: ['--help'], body: (out, err) {
-      expect(err, contains('Global codemod options:\n\n' + codemodArgParser.usage));
+      expect(err,
+          contains('Global codemod options:\n\n' + codemodArgParser.usage));
     });
 
-    testCodemod('--help outputs additional help text if provided', _afterNoPatches, 
-        script: 'codemod_help_output.dart',
-        args: ['--help'], body: (out, err) {
+    testCodemod(
+        '--help outputs additional help text if provided', _afterNoPatches,
+        script: 'codemod_help_output.dart', args: ['--help'], body: (out, err) {
       expect(err, contains('additional help output'));
     });
 
