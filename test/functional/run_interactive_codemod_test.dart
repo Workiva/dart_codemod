@@ -110,7 +110,14 @@ void main() {
   group('runInteractiveCodemod', () {
     testCodemod('--help outputs usage help text', _afterNoPatches,
         args: ['--help'], body: (out, err) {
-      expect(err, contains(codemodArgParser.usage));
+      expect(err,
+          contains('Global codemod options:\n\n' + codemodArgParser.usage));
+    });
+
+    testCodemod(
+        '--help outputs additional help text if provided', _afterNoPatches,
+        script: 'codemod_help_output.dart', args: ['--help'], body: (out, err) {
+      expect(err, contains('additional help output'));
     });
 
     testCodemod('skips all patches via prompts', _afterNoPatches,
@@ -163,6 +170,14 @@ void main() {
         expectedExitCode: 1,
         script: 'codemod.dart', body: (out, err) {
       expect(err, contains('6 change(s) needed.'));
+    });
+
+    testCodemod('--fail-on-changes adds extra text to output when provided',
+        _afterNoPatches,
+        args: ['--fail-on-changes'],
+        expectedExitCode: 1,
+        script: 'codemod_changes_required_output.dart', body: (out, err) {
+      expect(err, contains('6 change(s) needed.\n\nchanges required output'));
     });
   });
 }

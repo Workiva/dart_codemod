@@ -78,12 +78,16 @@ int runInteractiveCodemod(
   Suggestor suggestor, {
   Iterable<String> args,
   bool defaultYes = false,
+  String additionalHelpOutput,
+  String changesRequiredOutput,
 }) =>
     runInteractiveCodemodSequence(
       query,
       [suggestor],
       args: args,
       defaultYes: defaultYes,
+      additionalHelpOutput: additionalHelpOutput,
+      changesRequiredOutput: changesRequiredOutput,
     );
 
 /// Exactly the same as [runInteractiveCodemod] except that it runs all of the
@@ -108,6 +112,8 @@ int runInteractiveCodemodSequence(
   Iterable<Suggestor> suggestors, {
   Iterable<String> args,
   bool defaultYes = false,
+  String additionalHelpOutput,
+  String changesRequiredOutput,
 }) {
   try {
     ArgResults parsedArgs;
@@ -122,14 +128,24 @@ int runInteractiveCodemodSequence(
     }
 
     if (parsedArgs['help'] == true) {
+      stderr.writeln('Global codemod options:');
+      stderr.writeln();
       stderr.writeln(codemodArgParser.usage);
+
+      additionalHelpOutput ??= '';
+      if (additionalHelpOutput.isNotEmpty) {
+        stderr.writeln();
+        stderr.writeln('Additional options for this codemod:');
+        stderr.writeln(additionalHelpOutput);
+      }
       return ExitCode.success.code;
     }
 
     return overrideAnsiOutput<int>(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(query, suggestors, parsedArgs,
-            defaultYes: defaultYes));
+            defaultYes: defaultYes,
+            changesRequiredOutput: changesRequiredOutput));
   } catch (error, stackTrace) {
     stderr..writeln('Uncaught exception:')..writeln(error)..writeln(stackTrace);
     return ExitCode.software.code;
@@ -169,7 +185,7 @@ final codemodArgParser = ArgParser()
 
 int _runInteractiveCodemod(
     FileQuery query, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool defaultYes}) {
+    {bool defaultYes, String changesRequiredOutput}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
   final verbose = parsedArgs['verbose'] ?? false;
@@ -295,6 +311,12 @@ int _runInteractiveCodemod(
   if (failOnChanges) {
     if (numChanges > 0) {
       stderr.writeln('$numChanges change(s) needed.');
+
+      changesRequiredOutput ??= '';
+      if (changesRequiredOutput.isNotEmpty) {
+        stderr.writeln();
+        stderr.writeln(changesRequiredOutput);
+      }
       return 1;
     }
     stdout.writeln('No changes needed.');

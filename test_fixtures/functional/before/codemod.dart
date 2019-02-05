@@ -7,12 +7,14 @@ void main(List<String> args) {
   run(args);
 }
 
-void run(List<String> args, {bool defaultYes}) {
+void run(List<String> args, {bool defaultYes, String additionalHelpOutput, String changesRequiredOutput}) {
   exitCode = runInteractiveCodemod(
     FileQuery.dir(pathFilter: (path) => path.endsWith('.txt')),
     TestSuggestor(),
     args: args,
     defaultYes: defaultYes,
+    additionalHelpOutput: additionalHelpOutput,
+    changesRequiredOutput: changesRequiredOutput,
   );
 }
 
