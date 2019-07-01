@@ -149,10 +149,16 @@ int runInteractiveCodemodSequence(
   } catch (error, stackTrace) {
     stderr..writeln('Uncaught exception:')..writeln(error)..writeln(stackTrace);
     return ExitCode.software.code;
+  } finally {
+    cwdOverride = null;
   }
 }
 
 final codemodArgParser = ArgParser()
+  ..addOption(
+    'cwd',
+    help: 'Override the current working directory used when searching for files.',
+  )
   ..addFlag(
     'help',
     abbr: 'h',
@@ -201,6 +207,11 @@ int _runInteractiveCodemod(
     verbose: verbose,
   ));
 
+  final cwd = parsedArgs['cwd'];
+  if (cwd != null) {
+    cwdOverride = cwd;
+  }
+
   // Fail early if the target of the file query does not exist.
   if (!query.targetExists) {
     logger.severe('codemod target does not exist: ${query.target}');
@@ -208,8 +219,9 @@ int _runInteractiveCodemod(
   }
 
   stdout.writeln('searching...');
+  logger.fine('file query: $query');
+  final filePaths = query.generateFilePaths().toList()..sort();
   for (final suggestor in suggestors) {
-    final filePaths = query.generateFilePaths().toList()..sort();
     for (final filePath in filePaths) {
       logger.fine('file: $filePath');
       String sourceText;

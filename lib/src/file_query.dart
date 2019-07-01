@@ -19,6 +19,8 @@ import 'package:path/path.dart' as p;
 import 'run_interactive_codemod.dart' show runInteractiveCodemod;
 import 'util.dart' show pathLooksLikeCode;
 
+String cwdOverride;
+
 /// A representation of a query that should return a particular set of files.
 ///
 /// Required as an argument for [runInteractiveCodemod].
@@ -79,14 +81,22 @@ class _SingleFileQuery implements FileQuery {
 
   @override
   Iterable<String> generateFilePaths() sync* {
-    yield filePath;
+    yield target;
   }
 
   @override
-  String get target => filePath;
+  String get target {
+    if (cwdOverride != null && p.isRelative(filePath)) {
+      return p.normalize(p.join(cwdOverride, filePath));
+    }
+    return filePath;
+  }
 
   @override
-  bool get targetExists => FileSystemEntity.isFileSync(filePath);
+  bool get targetExists => FileSystemEntity.isFileSync(target);
+
+  @override
+  String toString() => '<_SingleFileQuery: $target>';
 }
 
 /// A query for all files in a directory.
@@ -115,7 +125,7 @@ class _FilesInDirQuery implements FileQuery {
 
   @override
   Iterable<String> generateFilePaths() sync* {
-    final dir = Directory(dirPath);
+    final dir = Directory(target);
     for (final fse
         in dir.listSync(followLinks: followLinks, recursive: recursive)) {
       if (fse is! File) {
@@ -134,8 +144,16 @@ class _FilesInDirQuery implements FileQuery {
   }
 
   @override
-  String get target => dirPath;
+  String get target {
+    if (cwdOverride != null && p.isRelative(dirPath)) {
+      return p.normalize(p.join(cwdOverride, dirPath));
+    }
+    return dirPath;
+  }
 
   @override
-  bool get targetExists => FileSystemEntity.isDirectorySync(dirPath);
+  bool get targetExists => FileSystemEntity.isDirectorySync(target);
+
+  @override
+  String toString() => '<_FilesInDirQuery: $target (filter: ${pathFilter != null}, followLinks: $followLinks, recursive: $recursive)>';
 }
