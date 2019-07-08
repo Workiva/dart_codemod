@@ -50,7 +50,7 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches,
       } else {
         stdout.writeln('Skipping overlapping patch ${patch.toString()}');
         patchCollector.skippedPatches.add(patch);
-        break;
+        continue;
       }
     }
 
