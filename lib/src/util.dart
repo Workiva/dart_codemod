@@ -23,18 +23,35 @@ import 'constants.dart';
 import 'file_query.dart';
 import 'patch.dart';
 
+/// Collector whose instance is passed to every source file to aggregate patches
+/// from the entire code modification.
+class PatchCollector {
+  List<Patch> skippedPatches = [];
+}
+
 /// Returns the result of applying all of the [patches]
 /// (insertions/deletions/replacements) to the contents of [sourceFile].
 ///
-/// Throws an [Exception] if any two of the given [patches] overlap.
-String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
+/// Throws an [Exception] if any two of the given [patches] overlap and the
+/// `skipOverlaps` argument is false or not provided. If `skipOverlaps` is true,
+/// overlapping patches will be added to the [PatchCollector] so that
+/// after the code modification completes.
+String applyPatches(SourceFile sourceFile, Iterable<Patch> patches,
+    PatchCollector patchCollector,
+    {bool skipOverlaps = false}) {
   final buffer = StringBuffer();
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      throw new Exception('Overlapping patch is not allowed.');
+      if (!skipOverlaps) {
+        throw new Exception('Overlapping patch is not allowed.');
+      } else {
+        stdout.writeln('Skipping overlapping patch ${patch.toString()}');
+        patchCollector.skippedPatches.add(patch);
+        break;
+      }
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -60,14 +77,17 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
 /// Throws an [ArgumentError] if [sourceFile] has a null value for
 /// [SourceFile.url], as it is required to open the file and write the new
 /// contents.
-void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
+void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches,
+    PatchCollector patchCollector,
+    {bool skipOverlaps = false}) {
   if (patches.isEmpty) {
     return;
   }
   if (sourceFile.url == null) {
     throw new ArgumentError('sourceFile.url cannot be null');
   }
-  final updatedContents = applyPatches(sourceFile, patches);
+  final updatedContents = applyPatches(sourceFile, patches, patchCollector,
+      skipOverlaps: skipOverlaps);
   File(sourceFile.url.path).writeAsStringSync(updatedContents);
 }
 

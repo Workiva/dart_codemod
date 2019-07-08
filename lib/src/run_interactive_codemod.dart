@@ -80,6 +80,7 @@ int runInteractiveCodemod(
   bool defaultYes = false,
   String additionalHelpOutput,
   String changesRequiredOutput,
+  bool skipOverlaps = false,
 }) =>
     runInteractiveCodemodSequence(
       query,
@@ -88,6 +89,7 @@ int runInteractiveCodemod(
       defaultYes: defaultYes,
       additionalHelpOutput: additionalHelpOutput,
       changesRequiredOutput: changesRequiredOutput,
+      skipOverlaps: skipOverlaps,
     );
 
 /// Exactly the same as [runInteractiveCodemod] except that it runs all of the
@@ -114,6 +116,7 @@ int runInteractiveCodemodSequence(
   bool defaultYes = false,
   String additionalHelpOutput,
   String changesRequiredOutput,
+  bool skipOverlaps = false,
 }) {
   try {
     ArgResults parsedArgs;
@@ -145,7 +148,8 @@ int runInteractiveCodemodSequence(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(query, suggestors, parsedArgs,
             defaultYes: defaultYes,
-            changesRequiredOutput: changesRequiredOutput));
+            changesRequiredOutput: changesRequiredOutput,
+            skipOverlaps: skipOverlaps));
   } catch (error, stackTrace) {
     stderr..writeln('Uncaught exception:')..writeln(error)..writeln(stackTrace);
     return ExitCode.software.code;
@@ -185,7 +189,9 @@ final codemodArgParser = ArgParser()
 
 int _runInteractiveCodemod(
     FileQuery query, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool defaultYes, String changesRequiredOutput}) {
+    {bool defaultYes,
+    String changesRequiredOutput,
+    bool skipOverlaps = false}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
   final verbose = parsedArgs['verbose'] ?? false;
@@ -206,6 +212,10 @@ int _runInteractiveCodemod(
     logger.severe('codemod target does not exist: ${query.target}');
     return ExitCode.noInput.code;
   }
+
+  // Used to collect information about which patches are skipped throughout the
+  // entire codemod.
+  final patchCollector = PatchCollector();
 
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
@@ -289,7 +299,8 @@ int _runInteractiveCodemod(
           }
           if (choice == 'q') {
             logger.fine('applying patches');
-            applyPatchesAndSave(sourceFile, appliedPatches);
+            applyPatchesAndSave(sourceFile, appliedPatches, patchCollector,
+                skipOverlaps: skipOverlaps);
             logger.fine('quitting');
             return ExitCode.success.code;
           }
@@ -302,11 +313,23 @@ int _runInteractiveCodemod(
 
       if (!failOnChanges) {
         logger.fine('applying patches');
-        applyPatchesAndSave(sourceFile, appliedPatches);
+        applyPatchesAndSave(sourceFile, appliedPatches, patchCollector,
+            skipOverlaps: skipOverlaps);
       }
     }
   }
   logger.fine('done');
+
+  if (patchCollector.skippedPatches.isNotEmpty) {
+    for (var patch in patchCollector.skippedPatches) {
+      stdout.writeln(
+          'NOTE: Overlapping patch was skipped. May require manual modification.');
+      stdout.writeln('      ${patch.toString()}');
+      stdout.writeln('      Updated text:');
+      stdout.writeln('      ${patch.updatedText}');
+      stdout.writeln('');
+    }
+  }
 
   if (failOnChanges) {
     if (numChanges > 0) {
