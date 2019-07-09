@@ -23,12 +23,6 @@ import 'constants.dart';
 import 'file_query.dart';
 import 'patch.dart';
 
-/// Collector whose instance is passed to every source file to aggregate patches
-/// from the entire code modification.
-class PatchCollector {
-  List<Patch> skippedPatches = [];
-}
-
 /// Returns the result of applying all of the [patches]
 /// (insertions/deletions/replacements) to the contents of [sourceFile].
 ///
@@ -36,22 +30,14 @@ class PatchCollector {
 /// `skipOverlaps` argument is false or not provided. If `skipOverlaps` is true,
 /// overlapping patches will be added to the [PatchCollector] so that
 /// after the code modification completes.
-String applyPatches(SourceFile sourceFile, Iterable<Patch> patches,
-    PatchCollector patchCollector,
-    {bool skipOverlaps = false}) {
+String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   final buffer = StringBuffer();
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      if (!skipOverlaps) {
-        throw new Exception('Overlapping patch is not allowed.');
-      } else {
-        stdout.writeln('Skipping overlapping patch ${patch.toString()}');
-        patchCollector.skippedPatches.add(patch);
-        continue;
-      }
+      throw new Exception('Overlapping patch is not allowed.');
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -77,18 +63,52 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches,
 /// Throws an [ArgumentError] if [sourceFile] has a null value for
 /// [SourceFile.url], as it is required to open the file and write the new
 /// contents.
-void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches,
-    PatchCollector patchCollector,
-    {bool skipOverlaps = false}) {
+void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
   if (patches.isEmpty) {
     return;
   }
   if (sourceFile.url == null) {
     throw new ArgumentError('sourceFile.url cannot be null');
   }
-  final updatedContents = applyPatches(sourceFile, patches, patchCollector,
-      skipOverlaps: skipOverlaps);
+  final updatedContents = applyPatches(sourceFile, patches);
   File(sourceFile.url.path).writeAsStringSync(updatedContents);
+}
+
+/// Finds overlapping patches and prompts the user to decide how to handle them.
+///
+/// The user can either skip the patch and continue running the codemod, or
+/// terminate the codemod.
+List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
+  List<Patch> skippedPatches = [];
+  final sortedPatches = patches.toList()..sort();
+
+  var lastEdgeOffset = 0;
+  for (final patch in sortedPatches) {
+    if (patch.startOffset < lastEdgeOffset) {
+      stdout.writeln(
+          'A patch that overlaps with a previous patch applied was found. '
+          'Do you want to skip this patch, or quit the codemod?\n'
+          'Overlapping patch: ${patch.toString()}\n'
+          'Updated text: ${patch.updatedText}\n'
+          '(s = skip this patch and apply the rest [default],\n'
+          'q = quit)');
+
+      var choice = prompt('sq', 's');
+
+      if (choice == 's') {
+        skippedPatches.add(patch);
+      }
+
+      if (choice == 'q') {
+        throw new Exception(
+            'User terminated codemod due to overlapping patch.\n'
+            'Overlapping patch: ${patch.toString()}\n'
+            'Updated text: ${patch.updatedText}\n');
+      }
+    }
+    lastEdgeOffset = patch.endOffset;
+  }
+  return skippedPatches;
 }
 
 /// Returns the number of lines that a patch diff should be constrained to.

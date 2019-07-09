@@ -31,6 +31,9 @@ const _testFixturesPath = 'test_fixtures/functional';
 const _afterAllPatches = '$_testFixturesPath/after_all_patches/';
 const _afterSomePatches = '$_testFixturesPath/after_some_patches/';
 const _afterNoPatches = '$_testFixturesPath/before/';
+const _overlappingPatchesQuit = '$_testFixturesPath/before/';
+const _overlappingPatchesSkip =
+    '$_testFixturesPath/after_overlapping_patches_skip/';
 const _projectPath = '$_testFixturesPath/before/';
 
 Future<Null> testCodemod(
@@ -178,6 +181,39 @@ void main() {
         expectedExitCode: 1,
         script: 'codemod_changes_required_output.dart', body: (out, err) {
       expect(err, contains('6 change(s) needed.\n\nchanges required output'));
+    });
+
+    testCodemod(
+        'skips overlapping patches via prompts', _overlappingPatchesSkip,
+        expectedExitCode: 0,
+        stdinLines: ['y', 'y', 's', 'y', 'y', 's', 'n', 'n'],
+        script: 'codemod_overlapping_patches.dart', body: (out, err) {
+      expect(
+          out,
+          contains(
+              'NOTE: Overlapping patch was skipped. May require manual modification.\n'
+              '      <Patch: on file1.txt from 1:2 to 1:4>\n'
+              '      Updated text:\n'
+              '      overlap\n'
+              '\n'
+              'NOTE: Overlapping patch was skipped. May require manual modification.\n'
+              '      <Patch: on file2.txt from 1:2 to 1:4>\n'
+              '      Updated text:\n'
+              '      overlap\n'
+              '\n'));
+    });
+
+    testCodemod('quits codemod via prompts when overlapping patches',
+        _overlappingPatchesQuit,
+        expectedExitCode: 70,
+        stdinLines: ['y', 'y', 'q'],
+        script: 'codemod_overlapping_patches.dart', body: (out, err) {
+      expect(
+          err,
+          contains(
+              'Exception: User terminated codemod due to overlapping patch.\n'
+              'Overlapping patch: <Patch: on file1.txt from 1:2 to 1:4>\n'
+              'Updated text: overlap\n'));
     });
   });
 }

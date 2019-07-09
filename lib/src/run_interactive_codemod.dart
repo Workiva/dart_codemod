@@ -80,7 +80,6 @@ int runInteractiveCodemod(
   bool defaultYes = false,
   String additionalHelpOutput,
   String changesRequiredOutput,
-  bool skipOverlaps = false,
 }) =>
     runInteractiveCodemodSequence(
       query,
@@ -89,7 +88,6 @@ int runInteractiveCodemod(
       defaultYes: defaultYes,
       additionalHelpOutput: additionalHelpOutput,
       changesRequiredOutput: changesRequiredOutput,
-      skipOverlaps: skipOverlaps,
     );
 
 /// Exactly the same as [runInteractiveCodemod] except that it runs all of the
@@ -116,7 +114,6 @@ int runInteractiveCodemodSequence(
   bool defaultYes = false,
   String additionalHelpOutput,
   String changesRequiredOutput,
-  bool skipOverlaps = false,
 }) {
   try {
     ArgResults parsedArgs;
@@ -148,8 +145,7 @@ int runInteractiveCodemodSequence(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(query, suggestors, parsedArgs,
             defaultYes: defaultYes,
-            changesRequiredOutput: changesRequiredOutput,
-            skipOverlaps: skipOverlaps));
+            changesRequiredOutput: changesRequiredOutput));
   } catch (error, stackTrace) {
     stderr..writeln('Uncaught exception:')..writeln(error)..writeln(stackTrace);
     return ExitCode.software.code;
@@ -189,9 +185,7 @@ final codemodArgParser = ArgParser()
 
 int _runInteractiveCodemod(
     FileQuery query, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool defaultYes,
-    String changesRequiredOutput,
-    bool skipOverlaps = false}) {
+    {bool defaultYes, String changesRequiredOutput}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
   final verbose = parsedArgs['verbose'] ?? false;
@@ -213,10 +207,7 @@ int _runInteractiveCodemod(
     return ExitCode.noInput.code;
   }
 
-  // Used to collect information about which patches are skipped throughout the
-  // entire codemod.
-  final patchCollector = PatchCollector();
-
+  List<Patch> skippedPatches = [];
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
     final filePaths = query.generateFilePaths().toList()..sort();
@@ -299,8 +290,17 @@ int _runInteractiveCodemod(
           }
           if (choice == 'q') {
             logger.fine('applying patches');
-            applyPatchesAndSave(sourceFile, appliedPatches, patchCollector,
-                skipOverlaps: skipOverlaps);
+            var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
+            // Store patch to print info about skipped patched after codemodding.
+            skippedPatches.addAll(userSkipped);
+
+            // Don't apply the patches the user skipped.
+            for (var patch in userSkipped) {
+              appliedPatches.remove(patch);
+              logger.fine('skipping patch ${patch}');
+            }
+
+            applyPatchesAndSave(sourceFile, appliedPatches);
             logger.fine('quitting');
             return ExitCode.success.code;
           }
@@ -313,15 +313,25 @@ int _runInteractiveCodemod(
 
       if (!failOnChanges) {
         logger.fine('applying patches');
-        applyPatchesAndSave(sourceFile, appliedPatches, patchCollector,
-            skipOverlaps: skipOverlaps);
+
+        var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
+        // Store patch to print info about skipped patched after codemodding.
+        skippedPatches.addAll(userSkipped);
+
+        // Don't apply the patches the user skipped.
+        for (var patch in userSkipped) {
+          appliedPatches.remove(patch);
+          logger.fine('skipping patch ${patch}');
+        }
+
+        applyPatchesAndSave(sourceFile, appliedPatches);
       }
     }
   }
   logger.fine('done');
 
-  if (patchCollector.skippedPatches.isNotEmpty) {
-    for (var patch in patchCollector.skippedPatches) {
+  if (skippedPatches.isNotEmpty) {
+    for (var patch in skippedPatches) {
       stdout.writeln(
           'NOTE: Overlapping patch was skipped. May require manual modification.');
       stdout.writeln('      ${patch.toString()}');
