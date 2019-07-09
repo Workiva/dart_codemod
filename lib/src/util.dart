@@ -26,10 +26,7 @@ import 'patch.dart';
 /// Returns the result of applying all of the [patches]
 /// (insertions/deletions/replacements) to the contents of [sourceFile].
 ///
-/// Throws an [Exception] if any two of the given [patches] overlap and the
-/// `skipOverlaps` argument is false or not provided. If `skipOverlaps` is true,
-/// overlapping patches will be added to the [PatchCollector] so that
-/// after the code modification completes.
+/// Throws an [Exception] if any two of the given [patches] overlap.
 String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   final buffer = StringBuffer();
   final sortedPatches = patches.toList()..sort();
@@ -37,7 +34,9 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   var lastEdgeOffset = 0;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      throw new Exception('Overlapping patch is not allowed.');
+      throw new Exception('Codemod terminated due to overlapping patch.\n'
+          'Overlapping patch: ${patch.toString()}\n'
+          'Updated text: ${patch.updatedText}\n');
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -77,7 +76,7 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
 /// Finds overlapping patches and prompts the user to decide how to handle them.
 ///
 /// The user can either skip the patch and continue running the codemod, or
-/// terminate the codemod.
+/// choose to quit the codemod.
 List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
   List<Patch> skippedPatches = [];
   final sortedPatches = patches.toList()..sort();
@@ -100,10 +99,12 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
       }
 
       if (choice == 'q') {
-        throw new Exception(
-            'User terminated codemod due to overlapping patch.\n'
-            'Overlapping patch: ${patch.toString()}\n'
-            'Updated text: ${patch.updatedText}\n');
+        // Returns the current list of skipped patches without adding the current
+        // patch, as the user has opted to quit the codemod. When `applyPatches`
+        // is called without the overlapping patch removed, it will throw an
+        // exception, but guarantee that other patches and skipped patches up to
+        // the current one are still applied.
+        return skippedPatches;
       }
     }
     lastEdgeOffset = patch.endOffset;

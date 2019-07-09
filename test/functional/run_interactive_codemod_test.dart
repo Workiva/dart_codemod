@@ -210,8 +210,7 @@ void main() {
         script: 'codemod_overlapping_patches.dart', body: (out, err) {
       expect(
           err,
-          contains(
-              'Exception: User terminated codemod due to overlapping patch.\n'
+          contains('Exception: Codemod terminated due to overlapping patch.\n'
               'Overlapping patch: <Patch: on file1.txt from 1:2 to 1:4>\n'
               'Updated text: overlap\n'));
     });
