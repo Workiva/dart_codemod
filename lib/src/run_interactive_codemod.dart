@@ -291,7 +291,7 @@ int _runInteractiveCodemod(
           if (choice == 'q') {
             logger.fine('applying patches');
             var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
-            // Store patch to print info about skipped patched after codemodding.
+            // Store patch(es) to print info about skipped patches after codemodding.
             skippedPatches.addAll(userSkipped);
 
             // Don't apply the patches the user skipped.
@@ -315,7 +315,7 @@ int _runInteractiveCodemod(
         logger.fine('applying patches');
 
         var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
-        // Store patch to print info about skipped patched after codemodding.
+        // Store patch(es) to print info about skipped patches after codemodding.
         skippedPatches.addAll(userSkipped);
 
         // Don't apply the patches the user skipped.
@@ -330,15 +330,13 @@ int _runInteractiveCodemod(
   }
   logger.fine('done');
 
-  if (skippedPatches.isNotEmpty) {
-    for (var patch in skippedPatches) {
-      stdout.writeln(
-          'NOTE: Overlapping patch was skipped. May require manual modification.');
-      stdout.writeln('      ${patch.toString()}');
-      stdout.writeln('      Updated text:');
-      stdout.writeln('      ${patch.updatedText}');
-      stdout.writeln('');
-    }
+  for (var patch in skippedPatches) {
+    stdout.writeln(
+        'NOTE: Overlapping patch was skipped. May require manual modification.');
+    stdout.writeln('      ${patch.toString()}');
+    stdout.writeln('      Updated text:');
+    stdout.writeln('      ${patch.updatedText}');
+    stdout.writeln('');
   }
 
   if (failOnChanges) {
