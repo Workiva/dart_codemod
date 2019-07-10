@@ -207,6 +207,7 @@ int _runInteractiveCodemod(
     return ExitCode.noInput.code;
   }
 
+  List<Patch> skippedPatches = [];
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
     final filePaths = query.generateFilePaths().toList()..sort();
@@ -289,6 +290,16 @@ int _runInteractiveCodemod(
           }
           if (choice == 'q') {
             logger.fine('applying patches');
+            var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
+            // Store patch(es) to print info about skipped patches after codemodding.
+            skippedPatches.addAll(userSkipped);
+
+            // Don't apply the patches the user skipped.
+            for (var patch in userSkipped) {
+              appliedPatches.remove(patch);
+              logger.fine('skipping patch ${patch}');
+            }
+
             applyPatchesAndSave(sourceFile, appliedPatches);
             logger.fine('quitting');
             return ExitCode.success.code;
@@ -302,11 +313,31 @@ int _runInteractiveCodemod(
 
       if (!failOnChanges) {
         logger.fine('applying patches');
+
+        var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
+        // Store patch(es) to print info about skipped patches after codemodding.
+        skippedPatches.addAll(userSkipped);
+
+        // Don't apply the patches the user skipped.
+        for (var patch in userSkipped) {
+          appliedPatches.remove(patch);
+          logger.fine('skipping patch ${patch}');
+        }
+
         applyPatchesAndSave(sourceFile, appliedPatches);
       }
     }
   }
   logger.fine('done');
+
+  for (var patch in skippedPatches) {
+    stdout.writeln(
+        'NOTE: Overlapping patch was skipped. May require manual modification.');
+    stdout.writeln('      ${patch.toString()}');
+    stdout.writeln('      Updated text:');
+    stdout.writeln('      ${patch.updatedText}');
+    stdout.writeln('');
+  }
 
   if (failOnChanges) {
     if (numChanges > 0) {

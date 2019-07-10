@@ -34,7 +34,9 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   var lastEdgeOffset = 0;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      throw new Exception('Overlapping patch is not allowed.');
+      throw new Exception('Codemod terminated due to overlapping patch.\n'
+          'Overlapping patch: ${patch.toString()}\n'
+          'Updated text: ${patch.updatedText}\n');
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -69,6 +71,45 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
   }
   final updatedContents = applyPatches(sourceFile, patches);
   File(sourceFile.url.path).writeAsStringSync(updatedContents);
+}
+
+/// Finds overlapping patches and prompts the user to decide how to handle them.
+///
+/// The user can either skip the patch and continue running the codemod, or
+/// choose to quit the codemod.
+List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
+  List<Patch> skippedPatches = [];
+  final sortedPatches = patches.toList()..sort();
+
+  var lastEdgeOffset = 0;
+  for (final patch in sortedPatches) {
+    if (patch.startOffset < lastEdgeOffset) {
+      stdout.writeln(
+          'A patch that overlaps with a previous patch applied was found. '
+          'Do you want to skip this patch, or quit the codemod?\n'
+          'Overlapping patch: ${patch.toString()}\n'
+          'Updated text: ${patch.updatedText}\n'
+          '(s = skip this patch and apply the rest [default],\n'
+          'q = quit)');
+
+      var choice = prompt('sq', 's');
+
+      if (choice == 's') {
+        skippedPatches.add(patch);
+      }
+
+      if (choice == 'q') {
+        // Returns the current list of skipped patches without adding the current
+        // patch, as the user has opted to quit the codemod. When `applyPatches`
+        // is called without the overlapping patch removed, it will throw an
+        // exception, but guarantee that other patches and skipped patches up to
+        // the current one are still applied.
+        return skippedPatches;
+      }
+    }
+    lastEdgeOffset = patch.endOffset;
+  }
+  return skippedPatches;
 }
 
 /// Returns the number of lines that a patch diff should be constrained to.
