@@ -1,3 +1,7 @@
+## [0.1.4](https://github.com/Workiva/dart_codemod/compare/0.1.3...0.1.4)
+
+- Prompts the user to either skip overlapping patches or quit when they are found. 
+
 ## [0.1.3](https://github.com/Workiva/dart_codemod/compare/0.1.2...0.1.3)
 
 - Codemod authors can now augment the help output and the changes required
