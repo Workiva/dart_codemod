@@ -189,6 +189,29 @@ line 5;''');
         expect(pathLooksLikeCode('project/.dart_tool/'), isFalse);
       });
 
+      test('returns false if root path segment is build', () {
+        expect(pathLooksLikeCode('build/'), isFalse);
+        expect(pathLooksLikeCode('build/test.dart'), isFalse);
+        expect(pathLooksLikeCode('build/packages/test.dart'), isFalse);
+      });
+
+      test('returns true if non-root path segment is build', () {
+        expect(pathLooksLikeCode('lib/src/build/'), isTrue);
+        expect(pathLooksLikeCode('tool/build/test.dart'), isTrue);
+      });
+
+      test(
+          'returns true if root path segment is build and includeFiles contains build',
+          () {
+        expect(pathLooksLikeCode('build/', includePaths: ['build']), isTrue);
+        expect(pathLooksLikeCode('build/test.dart', includePaths: ['build']),
+            isTrue);
+        expect(
+            pathLooksLikeCode('build/packages/test.dart',
+                includePaths: ['build/']),
+            isTrue);
+      });
+
       test('returns true if path starts with dot but only to reference cwd',
           () {
         expect(pathLooksLikeCode('./lib/foo.dart'), isTrue);

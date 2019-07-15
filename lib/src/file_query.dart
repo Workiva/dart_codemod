@@ -62,7 +62,13 @@ abstract class FileQuery {
   /// Returns all of the file paths found by this query, taking into account the
   /// [followLinks] and [recursive] options as well as the optional
   /// [pathFilter].
-  Iterable<String> generateFilePaths();
+  ///
+  /// If [includePaths] or [excludePaths] are provided, the paths will be included
+  /// or excluded in the returned list, even if the query [pathFilter] would have
+  /// included or excluded them.
+  Iterable<String> generateFilePaths(
+      {List<String> includePaths = const [],
+      List<String> excludePaths = const []});
 
   /// Whether or not the primary target exists.
   ///
@@ -78,7 +84,9 @@ class _SingleFileQuery implements FileQuery {
   _SingleFileQuery(this.filePath);
 
   @override
-  Iterable<String> generateFilePaths() sync* {
+  Iterable<String> generateFilePaths(
+      {List<String> includePaths = const [],
+      List<String> excludePaths = const []}) sync* {
     yield filePath;
   }
 
@@ -114,7 +122,9 @@ class _FilesInDirQuery implements FileQuery {
       : dirPath = path ?? p.current;
 
   @override
-  Iterable<String> generateFilePaths() sync* {
+  Iterable<String> generateFilePaths(
+      {List<String> includePaths = const [],
+      List<String> excludePaths = const []}) sync* {
     final dir = Directory(dirPath);
     for (final fse
         in dir.listSync(followLinks: followLinks, recursive: recursive)) {
@@ -122,11 +132,26 @@ class _FilesInDirQuery implements FileQuery {
         continue;
       }
       final filePath = p.relative(fse.absolute.path);
-      if (!pathLooksLikeCode(filePath)) {
+      for (var excluded in excludePaths) {
+        if (filePath.startsWith(excluded)) {
+          continue;
+        }
+      }
+      if (!pathLooksLikeCode(filePath, includePaths: includePaths)) {
         continue;
       }
+      // Check path filter first.
       if (pathFilter != null && pathFilter(filePath) != true) {
-        continue;
+        if (includePaths.isEmpty) continue;
+        // If path doesn't meet filter, make sure it's not in `includePaths`
+        for (var included in includePaths) {
+          if (!dirPath.startsWith(included)) {
+            // Path doesn't meet filter nor has it been explicitly included.
+            continue;
+          }
+          // Path has been explicitly included; yield it.
+          break;
+        }
       }
 
       yield filePath;

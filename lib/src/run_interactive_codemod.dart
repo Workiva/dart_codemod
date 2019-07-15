@@ -181,12 +181,24 @@ final codemodArgParser = ArgParser()
     'stderr-assume-tty',
     negatable: false,
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
-  );
+  )
+  ..addMultiOption('include',
+      valueHelp: 'path/to/dir,path/to/file.dart',
+      help:
+          'Runs the codemod on the specified directories or files in addition '
+          'to the ones the query the author specified to `runInteractiveCodemod`. '
+          'May be used to run codemod on files and directories excluded by default.')
+  ..addMultiOption('exclude',
+      valueHelp: 'path/to/dir,path/to/file.dart',
+      help: 'Does not run the codemod on the specified directories or files. '
+          'May be used to ignore files and directories included by default.');
 
 int _runInteractiveCodemod(
     FileQuery query, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
     {bool defaultYes, String changesRequiredOutput}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
+  final includePaths = parsedArgs['include'];
+  final excludePaths = parsedArgs['exclude'];
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
   final verbose = parsedArgs['verbose'] ?? false;
   var yesToAll = parsedArgs['yes-to-all'] ?? false;
@@ -207,10 +219,14 @@ int _runInteractiveCodemod(
     return ExitCode.noInput.code;
   }
 
+  final filePaths = query
+      .generateFilePaths(includePaths: includePaths, excludePaths: excludePaths)
+      .toList()
+        ..sort();
+
   List<Patch> skippedPatches = [];
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
-    final filePaths = query.generateFilePaths().toList()..sort();
     for (final filePath in filePaths) {
       logger.fine('file: $filePath');
       String sourceText;

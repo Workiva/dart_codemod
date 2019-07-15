@@ -155,11 +155,21 @@ bool isDartFile(String filePath) => path.extension(filePath) == '.dart';
 ///     // False
 ///     pathLooksLikeCode('.dart_tool/pub/bin/sdk-version')
 ///     // False
-bool pathLooksLikeCode(String filePath) =>
-    !filePath.contains('/.') &&
-    !filePath.contains('dev.dart') &&
-    !(filePath.startsWith('.') && !filePath.startsWith('./')) &&
-    !filePath.startsWith('build/');
+///
+/// If [includePaths] is provided, all filePaths that start with a path passed in
+/// this list will return true.
+bool pathLooksLikeCode(String filePath,
+    {List<String> includePaths = const []}) {
+  for (var path in includePaths) {
+    if (filePath.startsWith(path)) return true;
+  }
+
+  // By default, dotfile directories and the root build directory are not included
+  // as candidates for a codemod.
+  return !filePath.contains('/.') &&
+      !(filePath.startsWith('.') && !filePath.startsWith('./')) &&
+      !filePath.startsWith('build/');
+}
 
 /// Prompts the user to select an action via stdin.
 ///
