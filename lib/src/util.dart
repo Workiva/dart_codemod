@@ -157,7 +157,6 @@ bool isDartFile(String filePath) => path.extension(filePath) == '.dart';
 ///     // False
 bool pathLooksLikeCode(String filePath) =>
     !filePath.contains('/.') &&
-    !filePath.contains('dev.dart') &&
     !(filePath.startsWith('.') && !filePath.startsWith('./')) &&
     !filePath.startsWith('build/');
 

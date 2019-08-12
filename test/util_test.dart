@@ -189,6 +189,11 @@ line 5;''');
         expect(pathLooksLikeCode('project/.dart_tool/'), isFalse);
       });
 
+      test('returns false if path starts with build', () {
+        expect(pathLooksLikeCode('build/foo.dart'), isFalse);
+        expect(pathLooksLikeCode('build/'), isFalse);
+      });
+
       test('returns true if path starts with dot but only to reference cwd',
           () {
         expect(pathLooksLikeCode('./lib/foo.dart'), isTrue);
