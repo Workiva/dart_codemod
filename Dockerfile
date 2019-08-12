@@ -1,4 +1,4 @@
-FROM google/dart:2.1.0 as build
+FROM google/dart:2.4 as build
 
 # Build Environment Vars
 ARG BUILD_ID
@@ -28,7 +28,7 @@ RUN chmod 600 /root/.ssh/id_rsa
 RUN pub get
 RUN pub run dart_dev format --check
 RUN dartanalyzer .
-RUN pub run dependency_validator -i dart_style,pedantic
+RUN pub run dependency_validator -i dart_style,build_runner,build_test,pedantic
 RUN pub run test
 
 ARG BUILD_ARTIFACTS_BUILD=/build/pubspec.lock
