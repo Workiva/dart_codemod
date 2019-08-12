@@ -11,7 +11,7 @@ authors:
   - Evan Weible <evan.weible@workiva.com>
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ^2.2.1
 
 dependencies:
   analyzer: ^0.33.6+1
