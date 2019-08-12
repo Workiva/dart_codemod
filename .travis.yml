@@ -11,6 +11,6 @@ cache:
 script:
 - pub run dart_dev format --check
 - dartanalyzer .
-- pub run dependency_validator -i dart_style,pedantic
+- pub run dependency_validator -i build_runner,build_test,dart_style,pedantic
 - pub run test
 
