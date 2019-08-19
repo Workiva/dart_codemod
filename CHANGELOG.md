@@ -1,3 +1,9 @@
+## [0.1.5](https://github.com/Workiva/dart_codemod/compare/0.1.4...0.1.5)
+
+- Widen Analyzer dependency range from `^0.37.0` to `>=0.37.0 <0.39.0`.
+
+- Exclude `build/` folder when a codemod gets run.
+
 ## [0.1.4](https://github.com/Workiva/dart_codemod/compare/0.1.3...0.1.4)
 
 - Prompts the user to either skip overlapping patches or quit when they are found. 
