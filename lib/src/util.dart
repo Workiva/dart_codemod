@@ -121,44 +121,6 @@ int calculateDiffSize(Stdout stdout) {
       : 10;
 }
 
-/// Returns a path filter function that will return true for any file path with
-/// an extension in [extensions], and false otherwise.
-///
-///     final filter = createPathFilter(['.yaml', '.yml']);
-///     filter('./lib/foo.yaml') // true
-///     filter('./lib/foo.yml')  // true
-///     filter('./lib/foo.dart') // false
-bool Function(String path) createPathFilter(Iterable<String> extensions) {
-  return (filePath) =>
-      extensions.any((extension) => extension == path.extension(filePath));
-}
-
-/// Returns true if [filePath] is a Dart file (meaning that its extension is
-/// `.dart`), and false otherwise.
-///
-/// Use this with [FileQuery] to query for Dart files in a directory:
-///     FileQuery.dir(
-///       path: './lib/',
-///       pathFilter: isDartFile
-///     );
-///     // Will find all `.dart` files in `./lib/`
-bool isDartFile(String filePath) => path.extension(filePath) == '.dart';
-
-/// Returns `true` if the given file path looks like it is actual code, and
-/// `false` otherwise. Attempts to filter out common/known non-code paths like
-/// the dotfile directories.
-///
-///     pathLooksLikeCode('lib/codemod.dart')
-///     // true
-///     pathLooksLikeCode('.packages')
-///     // False
-///     pathLooksLikeCode('.dart_tool/pub/bin/sdk-version')
-///     // False
-bool pathLooksLikeCode(String filePath) =>
-    !filePath.contains('/.') &&
-    !(filePath.startsWith('.') && !filePath.startsWith('./')) &&
-    !filePath.startsWith('build/');
-
 /// Prompts the user to select an action via stdin.
 ///
 /// [letters] is the string of valid one-letter responses. In other words, if
