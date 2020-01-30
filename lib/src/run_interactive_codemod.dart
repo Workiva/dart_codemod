@@ -20,7 +20,6 @@ import 'package:io/io.dart';
 import 'package:logging/logging.dart';
 import 'package:source_span/source_span.dart';
 
-import 'file_query.dart';
 import 'logging.dart';
 import 'patch.dart';
 import 'suggestors.dart';
@@ -74,7 +73,7 @@ import 'util.dart';
 /// redirecting to a file by passing the `--stderr-assume-tty` flag:
 ///     $ dart example_codemod.dart --verbose --stderr-assume-tty 2>stderr.txt
 int runInteractiveCodemod(
-  FileQuery query,
+  Iterable<File> files,
   Suggestor suggestor, {
   Iterable<String> args,
   bool defaultYes = false,
@@ -82,7 +81,7 @@ int runInteractiveCodemod(
   String changesRequiredOutput,
 }) =>
     runInteractiveCodemodSequence(
-      query,
+      files,
       [suggestor],
       args: args,
       defaultYes: defaultYes,
@@ -108,7 +107,7 @@ int runInteractiveCodemod(
 ///       AggregateSuggestor([SuggestorA(), SuggestorB()]),
 ///     );
 int runInteractiveCodemodSequence(
-  FileQuery query,
+  Iterable<File> files,
   Iterable<Suggestor> suggestors, {
   Iterable<String> args,
   bool defaultYes = false,
@@ -143,7 +142,7 @@ int runInteractiveCodemodSequence(
 
     return overrideAnsiOutput<int>(
         stdout.supportsAnsiEscapes,
-        () => _runInteractiveCodemod(query, suggestors, parsedArgs,
+        () => _runInteractiveCodemod(files, suggestors, parsedArgs,
             defaultYes: defaultYes,
             changesRequiredOutput: changesRequiredOutput));
   } catch (error, stackTrace) {
@@ -184,7 +183,7 @@ final codemodArgParser = ArgParser()
   );
 
 int _runInteractiveCodemod(
-    FileQuery query, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
+    Iterable<File> files, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
     {bool defaultYes, String changesRequiredOutput}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
@@ -201,23 +200,24 @@ int _runInteractiveCodemod(
     verbose: verbose,
   ));
 
-  // Fail early if the target of the file query does not exist.
-  if (!query.targetExists) {
-    logger.severe('codemod target does not exist: ${query.target}');
-    return ExitCode.noInput.code;
+  // Warn and exit early if there are no inputs.
+  if (files.isEmpty) {
+    logger.warning('codemod found no files');
+    return ExitCode.success.code;
   }
 
-  List<Patch> skippedPatches = [];
+  List<Patch> skippedPatches = <Patch>[];
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
-    final filePaths = query.generateFilePaths().toList()..sort();
-    for (final filePath in filePaths) {
-      logger.fine('file: $filePath');
+    final sortedFiles = files.toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
+    for (final file in sortedFiles) {
+      logger.fine('file: ${file.path}');
       String sourceText;
       try {
-        sourceText = File(filePath).readAsStringSync();
+        sourceText = file.readAsStringSync();
       } catch (e, stackTrace) {
-        logger.severe('Failed to read file: $filePath', e, stackTrace);
+        logger.severe('Failed to read file: ${file.path}', e, stackTrace);
         return ExitCode.noInput.code;
       }
 
@@ -235,7 +235,7 @@ int _runInteractiveCodemod(
       }
 
       final sourceFile =
-          new SourceFile.fromString(sourceText, url: Uri.file(filePath));
+          SourceFile.fromString(sourceText, url: Uri.file(file.path));
       final appliedPatches = <Patch>[];
 
       try {

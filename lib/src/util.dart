@@ -20,7 +20,6 @@ import 'package:path/path.dart' as path;
 import 'package:source_span/source_span.dart';
 
 import 'constants.dart';
-import 'file_query.dart';
 import 'patch.dart';
 
 /// Returns the result of applying all of the [patches]

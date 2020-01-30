@@ -21,6 +21,7 @@ import 'dart:io';
 
 import 'package:analyzer/analyzer.dart';
 import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
 
 /// Suggestor that generates deletion patches for all deprecated declarations
 /// (i.e. classes, constructors, variables, methods, etc.).
@@ -41,7 +42,7 @@ class DeprecatedRemover extends GeneralizingAstVisitor
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    FileQuery.dir(path: 'deprecated_remover_fixtures/', pathFilter: isDartFile),
+    Glob('deprecated_remover_fixtures/**.dart').listSync().whereType<File>(),
     DeprecatedRemover(),
     args: args,
   );

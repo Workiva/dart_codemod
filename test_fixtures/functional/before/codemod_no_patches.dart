@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:codemod/codemod.dart';
 
 void main(List<String> args) {
-  exitCode = runInteractiveCodemod(FileQuery.dir(), NoopSuggestor(), args: args);
+  exitCode = runInteractiveCodemod(
+      Directory.current.listSync(recursive: true).whereType<File>(),
+      NoopSuggestor(),
+      args: args);
 }
 
 class NoopSuggestor implements Suggestor {

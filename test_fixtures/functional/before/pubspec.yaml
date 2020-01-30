@@ -5,3 +5,4 @@ private: true
 dev_dependencies:
   codemod:
     path: ../../../
+  glob: ^1.2.0

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export 'src/file_query.dart' show FileQuery;
+export 'src/file_query_util.dart'
+    show isHiddenFile, isNotHiddenFile, isDartHiddenFile, isNotDartHiddenFile;
 export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;

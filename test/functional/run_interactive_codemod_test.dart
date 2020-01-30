@@ -16,6 +16,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:codemod/codemod.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -95,8 +96,11 @@ Future<Null> testCodemod(
 }
 
 void expectProjectsMatch(String goldPath, String testPath) {
-  final sortedFiles =
-      Directory(goldPath).listSync(recursive: true).whereType<File>().toList();
+  final sortedFiles = Directory(goldPath)
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where(isNotHiddenFile)
+      .toList();
   sortedFiles.sort((a, b) => a.path.compareTo(b.path));
   for (final file in sortedFiles) {
     final relPath = p.relative(file.path, from: goldPath);

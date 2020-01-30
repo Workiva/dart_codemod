@@ -12,12 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-library tool.dev;
+import 'dart:io';
 
-import 'package:dart_dev/dart_dev.dart' show dev, config;
+import 'package:path/path.dart' as p;
 
-main(List<String> args) async {
-  // https://github.com/Workiva/dart_dev
-  config.format.paths = ['example/', 'lib/', 'test/', 'tool/'];
-  await dev(args);
+bool isHiddenFile(File file) {
+  final path = p.normalize(file.path);
+  return p.basename(path).startsWith('.') ||
+      p.split(path).any((segment) => segment.startsWith('.'));
 }
+
+bool isNotHiddenFile(File file) => !isHiddenFile(file);
+
+bool isDartHiddenFile(File file) {
+  final path = p.normalize(file.path);
+  return p.basename(path) == '.packages' ||
+      p.split(p.normalize(path)).any((segment) => segment == '.dart_tool');
+}
+
+bool isNotDartHiddenFile(File file) => !isDartHiddenFile(file);

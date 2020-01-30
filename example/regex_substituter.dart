@@ -55,7 +55,7 @@ class RegexSubstituter implements Suggestor {
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    FileQuery.single('regex_substituter_fixtures/pubspec.yaml'),
+    [File('regex_substituter_fixtures/pubspec.yaml')],
     RegexSubstituter(),
     args: args,
   );

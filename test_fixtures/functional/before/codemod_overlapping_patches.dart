@@ -1,10 +1,14 @@
 import 'dart:io';
 
 import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
 import 'package:source_span/source_span.dart';
 
 void main(List<String> args) {
-  exitCode = runInteractiveCodemod(FileQuery.dir(pathFilter: (path) => path.endsWith('.txt')), OverlappingPatchSuggestor(), args: args);
+  exitCode = runInteractiveCodemod(
+      Glob('**.txt').listSync().whereType<File>().where(isNotHiddenFile),
+      OverlappingPatchSuggestor(),
+      args: args);
 }
 
 class OverlappingPatchSuggestor implements Suggestor {
