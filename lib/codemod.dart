@@ -13,10 +13,15 @@
 // limitations under the License.
 
 export 'src/file_query_util.dart'
-    show isHiddenFile, isNotHiddenFile, isDartHiddenFile, isNotDartHiddenFile;
+    show
+        filePathsFromGlob,
+        isHiddenFile,
+        isNotHiddenFile,
+        isDartHiddenFile,
+        isNotDartHiddenFile;
 export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;
 export 'src/suggestors.dart'
     show AggregateSuggestor, AstVisitingSuggestorMixin, Suggestor;
-export 'src/util.dart' show applyPatches, createPathFilter, isDartFile;
+export 'src/util.dart' show applyPatches;

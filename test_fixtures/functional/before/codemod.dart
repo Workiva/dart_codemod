@@ -13,7 +13,7 @@ void run(List<String> args,
     String additionalHelpOutput,
     String changesRequiredOutput}) {
   exitCode = runInteractiveCodemod(
-    Glob('**.txt').listSync().whereType<File>().where(isNotHiddenFile),
+    ['file1.txt', 'file2.txt', 'skip.txt'],
     TestSuggestor(),
     args: args,
     defaultYes: defaultYes,
@@ -27,6 +27,7 @@ class TestSuggestor implements Suggestor {
   bool shouldSkip(String sourceFileContents) =>
       sourceFileContents.startsWith('skip');
 
+  @override
   Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
     final lineLength = 'line #'.length;
 

@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
 
-class DeprecatedRemover extends GeneralizingAstVisitor
+class DeprecatedRemover extends GeneralizingAstVisitor<void>
     with AstVisitingSuggestorMixin {
   static bool isDeprecated(AnnotatedNode node) =>
       node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
 
   @override
-  visitDeclaration(Declaration node) {
+  void visitDeclaration(Declaration node) {
     if (isDeprecated(node)) {
       // Remove the node by replacing the span from its start offset to its end
       // offset with an empty string.

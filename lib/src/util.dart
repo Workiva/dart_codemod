@@ -16,7 +16,6 @@ import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:io/ansi.dart';
-import 'package:path/path.dart' as path;
 import 'package:source_span/source_span.dart';
 
 import 'constants.dart';
@@ -33,7 +32,7 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   var lastEdgeOffset = 0;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      throw new Exception('Codemod terminated due to overlapping patch.\n'
+      throw Exception('Codemod terminated due to overlapping patch.\n'
           'Overlapping patch: ${patch.toString()}\n'
           'Updated text: ${patch.updatedText}\n');
     }
@@ -66,7 +65,7 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
     return;
   }
   if (sourceFile.url == null) {
-    throw new ArgumentError('sourceFile.url cannot be null');
+    throw ArgumentError('sourceFile.url cannot be null');
   }
   final updatedContents = applyPatches(sourceFile, patches);
   File(sourceFile.url.path).writeAsStringSync(updatedContents);
@@ -77,7 +76,7 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
 /// The user can either skip the patch and continue running the codemod, or
 /// choose to quit the codemod.
 List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
-  List<Patch> skippedPatches = [];
+  final skippedPatches = <Patch>[];
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;

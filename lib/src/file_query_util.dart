@@ -14,7 +14,22 @@
 
 import 'dart:io';
 
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
+
+/// Returns file paths matched by [glob] and filtered to exclude any of the
+/// following by default:
+/// - Hidden files (filename starts with `.`)
+/// - Files in hidden directories (dirname starts with `.`)
+///
+/// If [ignoreHiddenFiles] is false, these hidden files will be included.
+Iterable<String> filePathsFromGlob(Glob glob, {bool ignoreHiddenFiles}) {
+  var files = glob.listSync().whereType<File>();
+  if (ignoreHiddenFiles ?? true) {
+    files = files.where(isNotHiddenFile);
+  }
+  return files.map((file) => file.path);
+}
 
 bool isHiddenFile(File file) {
   final path = p.normalize(file.path);
@@ -27,7 +42,7 @@ bool isNotHiddenFile(File file) => !isHiddenFile(file);
 bool isDartHiddenFile(File file) {
   final path = p.normalize(file.path);
   return p.basename(path) == '.packages' ||
-      p.split(p.normalize(path)).any((segment) => segment == '.dart_tool');
+      p.split(path).contains('.dart_tool');
 }
 
 bool isNotDartHiddenFile(File file) => !isDartHiddenFile(file);

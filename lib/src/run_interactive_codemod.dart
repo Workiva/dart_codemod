@@ -29,11 +29,8 @@ import 'util.dart';
 /// potential patch and `stdin` to accept input from the user on what to do with
 /// said patch; returns an appropriate exit code when complete.
 ///
-/// [query] will generate the set of file paths that will then be read and used
-/// to generate potential patches.
-///
-/// [suggestor] will generate patches for each file that will be shown to the
-/// user in turn to be accepted or skipped.
+/// [suggestor] will generate patches for each file in [files]. Each patch will
+/// be shown to the user to be accepted or skipped.
 ///
 /// If [defaultYes] is true, then the default option for each patch prompt will
 /// be yes (meaning that just hitting "enter" will accept the patch).
@@ -50,11 +47,12 @@ import 'util.dart';
 /// To run a codemod from the command line, setup a `.dart` file with a `main`
 /// block like so:
 ///     import 'dart:io';
+///
 ///     import 'package:codemod/codemod.dart';
 ///
 ///     void main(List<String> args) {
 ///       exitCode = runInteractiveCodemod(
-///         FileQuery.dir(...),
+///         [...], // input files,
 ///         ExampleSuggestor(),
 ///         args: args,
 ///       );
@@ -73,7 +71,7 @@ import 'util.dart';
 /// redirecting to a file by passing the `--stderr-assume-tty` flag:
 ///     $ dart example_codemod.dart --verbose --stderr-assume-tty 2>stderr.txt
 int runInteractiveCodemod(
-  Iterable<File> files,
+  Iterable<String> filePaths,
   Suggestor suggestor, {
   Iterable<String> args,
   bool defaultYes = false,
@@ -81,7 +79,7 @@ int runInteractiveCodemod(
   String changesRequiredOutput,
 }) =>
     runInteractiveCodemodSequence(
-      files,
+      filePaths,
       [suggestor],
       args: args,
       defaultYes: defaultYes,
@@ -107,7 +105,7 @@ int runInteractiveCodemod(
 ///       AggregateSuggestor([SuggestorA(), SuggestorB()]),
 ///     );
 int runInteractiveCodemodSequence(
-  Iterable<File> files,
+  Iterable<String> filePaths,
   Iterable<Suggestor> suggestors, {
   Iterable<String> args,
   bool defaultYes = false,
@@ -142,7 +140,7 @@ int runInteractiveCodemodSequence(
 
     return overrideAnsiOutput<int>(
         stdout.supportsAnsiEscapes,
-        () => _runInteractiveCodemod(files, suggestors, parsedArgs,
+        () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
             defaultYes: defaultYes,
             changesRequiredOutput: changesRequiredOutput));
   } catch (error, stackTrace) {
@@ -182,8 +180,8 @@ final codemodArgParser = ArgParser()
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
   );
 
-int _runInteractiveCodemod(
-    Iterable<File> files, Iterable<Suggestor> suggestors, ArgResults parsedArgs,
+int _runInteractiveCodemod(Iterable<String> filePaths,
+    Iterable<Suggestor> suggestors, ArgResults parsedArgs,
     {bool defaultYes, String changesRequiredOutput}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
@@ -201,18 +199,17 @@ int _runInteractiveCodemod(
   ));
 
   // Warn and exit early if there are no inputs.
-  if (files.isEmpty) {
+  if (filePaths.isEmpty) {
     logger.warning('codemod found no files');
     return ExitCode.success.code;
   }
 
-  List<Patch> skippedPatches = <Patch>[];
+  final skippedPatches = <Patch>[];
   stdout.writeln('searching...');
   for (final suggestor in suggestors) {
-    final sortedFiles = files.toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
-    for (final file in sortedFiles) {
-      logger.fine('file: ${file.path}');
+    for (final filePath in filePaths) {
+      logger.fine('file: filePath');
+      final file = File(filePath);
       String sourceText;
       try {
         sourceText = file.readAsStringSync();

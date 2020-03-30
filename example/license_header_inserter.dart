@@ -57,7 +57,7 @@ class LicenseHeaderInserter implements Suggestor {
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    Glob('license_header_fixtures/**.dart').listSync().whereType<File>(),
+    filePathsFromGlob(Glob('license_header_fixtures/**.dart')),
     LicenseHeaderInserter(),
     args: args,
   );

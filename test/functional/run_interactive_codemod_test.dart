@@ -41,7 +41,7 @@ Future<Null> testCodemod(
   String description,
   String goldPath, {
   List<String> args,
-  body(String out, String err),
+  void Function(String out, String err) body,
   int expectedExitCode,
   String script,
   List<String> stdinLines,
@@ -62,7 +62,10 @@ Future<Null> testCodemod(
             '${pubGetResult.stderr}');
       }
 
-      final processArgs = [script ?? 'codemod.dart']..addAll(args ?? []);
+      final processArgs = [
+        script ?? 'codemod.dart',
+        ...?args,
+      ];
       if (_debug) {
         processArgs.add('--verbose');
       }

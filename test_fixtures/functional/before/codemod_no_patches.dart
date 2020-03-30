@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-      Directory.current.listSync(recursive: true).whereType<File>(),
-      NoopSuggestor(),
+      filePathsFromGlob(Glob('**')), NoopSuggestor(),
       args: args);
 }
 

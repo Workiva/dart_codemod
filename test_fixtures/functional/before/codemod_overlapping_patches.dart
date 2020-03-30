@@ -1,13 +1,11 @@
 import 'dart:io';
 
 import 'package:codemod/codemod.dart';
-import 'package:glob/glob.dart';
 import 'package:source_span/source_span.dart';
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-      Glob('**.txt').listSync().whereType<File>().where(isNotHiddenFile),
-      OverlappingPatchSuggestor(),
+      ['file1.txt', 'file2.txt', 'skip.txt'], OverlappingPatchSuggestor(),
       args: args);
 }
 

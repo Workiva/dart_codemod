@@ -55,6 +55,6 @@ void copyDirectory(Directory source, Directory dest) {
 /// forces ANSI output to be enabled. This allows the test to verify that
 /// certain output is highlighted correctly even when running in environments
 /// where ANSI output would normally be disabled (like CI).
-void testWithAnsi(String description, body()) {
+void testWithAnsi(String description, void Function() body) {
   test(description, () => overrideAnsiOutput(true, body));
 }
