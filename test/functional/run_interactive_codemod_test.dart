@@ -218,8 +218,12 @@ void main() {
       expect(
           err,
           contains('Exception: Codemod terminated due to overlapping patch.\n'
-              'Overlapping patch: <Patch: on file1.txt from 1:2 to 1:4>\n'
-              'Updated text: overlap\n'));
+              'Previous patch:\n'
+              '  <Patch: on file1.txt from 1:1 to 1:4>\n'
+              '  Updated text: dov\n'
+              'Overlapping patch:\n'
+              '  <Patch: on file1.txt from 1:2 to 1:4>\n'
+              '  Updated text: overlap\n'));
     });
   });
 }
