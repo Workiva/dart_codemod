@@ -30,11 +30,16 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;
+  Patch prev;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
       throw Exception('Codemod terminated due to overlapping patch.\n'
-          'Overlapping patch: ${patch.toString()}\n'
-          'Updated text: ${patch.updatedText}\n');
+          'Previous patch:\n'
+          '  $prev\n'
+          '  Updated text: ${prev.updatedText}\n'
+          'Overlapping patch:\n'
+          '  $patch\n'
+          '  Updated text: ${patch.updatedText}\n');
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -44,6 +49,7 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
     buffer.write(patch.updatedText);
 
     lastEdgeOffset = patch.endOffset;
+    prev = patch;
   }
 
   final lastUnmodifiedText = sourceFile.getText(lastEdgeOffset);
@@ -80,13 +86,18 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;
+  Patch prev;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
       stdout.writeln(
           'A patch that overlaps with a previous patch applied was found. '
           'Do you want to skip this patch, or quit the codemod?\n'
-          'Overlapping patch: ${patch.toString()}\n'
-          'Updated text: ${patch.updatedText}\n'
+          'Previous patch:\n'
+          '  $prev\n'
+          '  Updated text: ${prev.updatedText}\n'
+          'Overlapping patch:\n'
+          '  $patch\n'
+          '  Updated text: ${patch.updatedText}\n'
           '(s = skip this patch and apply the rest [default],\n'
           'q = quit)');
 
@@ -106,6 +117,7 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
       }
     }
     lastEdgeOffset = patch.endOffset;
+    prev = patch;
   }
   return skippedPatches;
 }
