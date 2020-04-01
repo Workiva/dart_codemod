@@ -44,4 +44,31 @@ void main() {
       expect(isHiddenFile(File('/root/foo/../bar')), isFalse);
     });
   });
+
+  group('isDartHiddenFile', () {
+    test('returns false for non-dart-hidden files', () {
+      expect(isDartHiddenFile(File('foo/bar_/baz')), isFalse); // relative
+      expect(isDartHiddenFile(File('/root/foo/bar_')), isFalse); // absolute
+    });
+
+    test('returns true for ".packages"', () {
+      expect(isDartHiddenFile(File('foo/.packages')), isTrue); // relative
+      expect(isDartHiddenFile(File('/root/foo/.packages')), isTrue); // absolute
+    });
+
+    test('returns true when any path segment is ".dart_tool"', () {
+      expect(isDartHiddenFile(File('foo/.dart_tool/baz')), isTrue); // relative
+      expect(isDartHiddenFile(File('/root/foo/.dart_tool/baz')),
+          isTrue); // absolute
+    });
+
+    test('normalizes "." and ".." path segments', () {
+      // relative
+      expect(isDartHiddenFile(File('foo/./bar')), isFalse);
+      expect(isDartHiddenFile(File('foo/../bar')), isFalse);
+      // absolute
+      expect(isDartHiddenFile(File('/root/foo/./bar')), isFalse);
+      expect(isDartHiddenFile(File('/root/foo/../bar')), isFalse);
+    });
+  });
 }

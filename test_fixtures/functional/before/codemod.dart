@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:codemod/codemod.dart';
-import 'package:glob/glob.dart';
 import 'package:source_span/source_span.dart';
 
 void main(List<String> args) {
