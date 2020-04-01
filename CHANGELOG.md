@@ -1,3 +1,42 @@
+## [0.2.0](https://github.com/Workiva/dart_codemod/compare/0.1.5...0.2.0)
+
+- **Breaking Change:** remove the `FileQuery` class. The
+`runInteractiveCodemod()` function now expects an `Iterable<File>` instead of a
+`FileQuery`. This is intended to simplify consumption; [`package:glob`][glob]
+can be used to easily query for the desired files.
+
+- **Breaking Change:** remove `createPathFilter()` - this was used with `FileQuery` and can be replaced by custom logic now that
+`runInteractiveCodemod()` accepts an `Iterable<File>`.
+
+- **Breaking Change:** remove `isDartFile()` - use [`package:glob`][glob]
+instead to target files with the `.dart` extension (e.g. `Glob('**.dart')`).
+
+- Add a `filePathsFromGlob()` utility function that takes a `Glob` instance and
+returns the file paths matched by the glob, but filtered to exclude hidden
+files (e.g. files in `.dart_tool/`). This is intended to serve the most common
+use case of running codemods on Dart projects, e.g.:
+
+    ```dart
+    runInteractiveCodemod(
+      filePathsFromGlob(Glob('**.dart', recursive: true)),
+      suggestor);
+    ```
+
+[glob]: https://pub.dev/packages/glob
+
+- Widen Analyzer dependency range to include `0.39.x`.
+
+- Make `Patch` override `operator ==` and `hashCode` so that instances can be
+compared for equality. If two `Patch` instances target the same span in the same
+file and have the same `updatedText`, they are considered equal.
+
+- `AstVisitingSuggestorMixin` now de-duplicates patches suggested for each
+source file. This can be useful for recursive and generalizing AST visitors that
+may end up suggesting duplicate patches in parts of the AST that get handled by
+multiple `visit` methods.
+
+- Improve the error/help output when overlapping patches are found.
+
 ## [0.1.5](https://github.com/Workiva/dart_codemod/compare/0.1.4...0.1.5)
 
 - Widen Analyzer dependency range from `^0.37.0` to `>=0.37.0 <0.39.0`.
