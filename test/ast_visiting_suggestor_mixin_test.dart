@@ -27,6 +27,14 @@ class Simple extends SimpleAstVisitor<void> with AstVisitingSuggestorMixin {
   }
 }
 
+class Duplicate extends SimpleAstVisitor<void> with AstVisitingSuggestorMixin {
+  @override
+  void visitCompilationUnit(_) {
+    yieldPatch(0, 1, 'foo');
+    yieldPatch(0, 1, 'foo');
+  }
+}
+
 void main() {
   group('AstVisitingSuggestorMixin', () {
     test('should make the sourceFile available', () {
@@ -70,6 +78,12 @@ void main() {
         expect(patchesB.single.endOffset, 1);
         expect(patchesB.single.updatedText, 'foo');
         expect(suggestor.sourceFile, sourceFileB);
+      });
+
+      test('should de-duplicate patches', () {
+        final suggestor = Duplicate();
+        final sourceFile = SourceFile.fromString('library foo;');
+        expect(suggestor.generatePatches(sourceFile), hasLength(1));
       });
     });
 
