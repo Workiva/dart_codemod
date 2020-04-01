@@ -4,7 +4,9 @@ import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
 
 void main(List<String> args) {
-  exitCode = runInteractiveCodemod(FileQuery.dir(pathFilter: (path) => path.endsWith('.txt')), OverlappingPatchSuggestor(), args: args);
+  exitCode = runInteractiveCodemod(
+      ['file1.txt', 'file2.txt', 'skip.txt'], OverlappingPatchSuggestor(),
+      args: args);
 }
 
 class OverlappingPatchSuggestor implements Suggestor {

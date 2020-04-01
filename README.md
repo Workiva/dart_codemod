@@ -21,14 +21,13 @@ apply code modifications and refactors via an interactive CLI. To that end,
 the following function is provided:
 
 ```dart
-int runInteractiveCodemod(FileQuery query, Suggestor suggestor);
+int runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
 ```
 
-Calling this will tell codemod to scan for files using `query`, which will
-return a set of file paths that codemod will then read. Each file is then
-provided as the input to the suggestor, which will return a list of patches that
-should be suggested to the user. As patches are suggested and accepted by the
-user, codemod handles applying them to the files and writing the result to disk.
+Calling this will tell codemod run the `suggestor` on each file in `files`. For
+each file, the suggestor will return a list of patches that should be suggested
+to the user. As patches are suggested and accepted by the user, codemod handles
+applying them to the files and writing the result to disk.
 
 ## Writing a Suggestor
 
@@ -188,11 +187,21 @@ job.
 
 All you need to run a codemod is:
 
-1. A `FileQuery` to determine the set of files to be read
+1. A set of files to be read.
 
-2. A `Suggestor` to suggest patches on each file
+    You can create this `Iterable<String>` input however you like. An easy
+    option is to use `Glob` from `package:glob` with the `filePathsFromGlob()`
+    util method from this package. Globs make it easy to query for files
+    recursively, and `filePathsFromGlob()` will filter out hidden files by
+    default:
 
-3. A `.dart` file with a `main()` block that calls `runInterativeCodemod()`
+    ```dart
+    filePathsFromGlob(Glob('**.dart', recursive: true))
+    ```
+
+2. A `Suggestor` to suggest patches on each file.
+
+3. A `.dart` file with a `main()` block that calls `runInteractiveCodemod()`.
 
 If we were to run the 3 suggestor examples from above, it would like like so:
 
@@ -204,7 +213,7 @@ import 'package:codemod/codemod.dart';
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    FileQuery.single('pubspec.yaml'),
+    ['pubspec.yaml'],
     RegexSubstituter(),
     args: args,
   );
@@ -215,11 +224,13 @@ void main(List<String> args) {
 
 ```dart
 import 'dart:io';
+
 import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    FileQuery.dir(pathFilter: isDartFile),
+    filePathsFromGlob(Glob('**.dart', recursive: true)),
     LicenseHeaderInserter(),
     args: args,
   );
@@ -230,11 +241,13 @@ void main(List<String> args) {
 
 ```dart
 import 'dart:io';
+
 import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    FileQuery.dir(pathFilter: isDartFile),
+    filePathsFromGlob(Glob('**.dart', recursive: true)),
     DeprecatedRemover(),
     args: args,
   );
@@ -254,12 +267,12 @@ provided by this library:
 
     ```dart
     import 'dart:io';
+
     import 'package:codemod/codemod.dart';
 
     void main(List<String> args) {
-      final query = ...;
       exitCode = runInteractiveCodemod(
-        query,
+        [...], // input files
         AggregateSuggestor([
           SuggestorA(),
           SuggestorB(),
@@ -272,12 +285,12 @@ provided by this library:
 
     ```dart
     import 'dart:io';
+
     import 'package:codemod/codemod.dart';
 
     void main(List<String> args) {
-      final query = ...;
       exitCode = runInteractiveCodemodSequence(
-        query,
+        [...], // input files
         [
           PhaseOneSuggestor(),
           PhaseTwoSuggestor(),

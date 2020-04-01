@@ -20,6 +20,7 @@ library dart_codemod.example.license_header_inserter;
 import 'dart:io';
 
 import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
 import 'package:source_span/source_span.dart';
 
 final String licenseHeader = '''
@@ -56,7 +57,7 @@ class LicenseHeaderInserter implements Suggestor {
 
 void main(List<String> args) {
   exitCode = runInteractiveCodemod(
-    FileQuery.dir(path: 'license_header_fixtures/', pathFilter: isDartFile),
+    filePathsFromGlob(Glob('license_header_fixtures/**.dart')),
     LicenseHeaderInserter(),
     args: args,
   );

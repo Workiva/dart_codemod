@@ -166,46 +166,6 @@ line 5;''');
         expect(calculateDiffSize(mockStdout), 40);
       });
     });
-
-    test('createPathFilter() returns a filter function for given extensions',
-        () {
-      final filter = createPathFilter(['.yaml', '.yml']);
-      expect(filter('./lib/foo.yaml'), isTrue);
-      expect(filter('./lib/foo.yml'), isTrue);
-      expect(filter('./lib/foo.dart'), isFalse);
-    });
-
-    test('isDartFile() returns true only if extension is .dart', () {
-      expect(isDartFile('./lib/foo.dart'), isTrue);
-      expect(isDartFile('./lib/foo.yaml'), isFalse);
-    });
-
-    group('pathLooksLikeCode()', () {
-      test('returns false if any path segment starts with a dot', () {
-        expect(pathLooksLikeCode('/.dotfile'), isFalse);
-        expect(pathLooksLikeCode('.packages'), isFalse);
-        expect(pathLooksLikeCode('.dart_tool/pub/bin/sdk-version'), isFalse);
-        expect(pathLooksLikeCode('project/.packages'), isFalse);
-        expect(pathLooksLikeCode('project/.dart_tool/'), isFalse);
-      });
-
-      test('returns false if path starts with build', () {
-        expect(pathLooksLikeCode('build/foo.dart'), isFalse);
-        expect(pathLooksLikeCode('build/'), isFalse);
-      });
-
-      test('returns true if path starts with dot but only to reference cwd',
-          () {
-        expect(pathLooksLikeCode('./lib/foo.dart'), isTrue);
-      });
-
-      test('returns true otherwise', () {
-        expect(pathLooksLikeCode('foo.dart'), isTrue);
-        expect(pathLooksLikeCode('./foo.dart'), isTrue);
-        expect(pathLooksLikeCode('lib/foo.dart'), isTrue);
-        expect(pathLooksLikeCode('./lib/foo.dart'), isTrue);
-      });
-    });
   });
 }
 

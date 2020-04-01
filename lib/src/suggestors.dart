@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:meta/meta.dart';
 import 'package:source_span/source_span.dart';
 
@@ -112,7 +113,7 @@ abstract class Suggestor {
 /// collective set of [Patch]es generted by each individual suggestor for each
 /// source file.
 ///     runInteractiveCodemod(
-///       FileQuery.dir(pathFilter: isDartFile),
+///       filesFromGlob(Glob('**.dart', recursive: true)),
 ///       AggregateSuggestor([
 ///         SuggestorA(),
 ///         SuggestorB(),
@@ -176,7 +177,7 @@ class AggregateSuggestor implements Suggestor {
 ///         }
 ///       }
 ///     }
-mixin AstVisitingSuggestorMixin on AstVisitor implements Suggestor {
+mixin AstVisitingSuggestorMixin<R> on AstVisitor<R> implements Suggestor {
   final List<Patch> _patches = [];
 
   SourceFile _sourceFile;
@@ -187,16 +188,18 @@ mixin AstVisitingSuggestorMixin on AstVisitor implements Suggestor {
     _patches.clear();
     _sourceFile = sourceFile;
 
-    final compilationUnit = parseCompilationUnit(sourceFile.getText(0));
-    compilationUnit.accept(this);
+    final parsed =
+        parseString(content: sourceFile.getText(0), path: '${sourceFile.url}');
+    parsed.unit.accept(this);
     yield* _patches;
   }
 
+  @override
   bool shouldSkip(_) => false;
 
   void yieldPatch(int startOffset, int endOffset, String updatedText) {
     if (sourceFile == null) {
-      throw new StateError('yieldPatch() called outside of a visiting context. '
+      throw StateError('yieldPatch() called outside of a visiting context. '
           'Ensure that it is only called inside an AST visitor method.');
     }
     _patches.add(Patch(

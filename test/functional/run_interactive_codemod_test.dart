@@ -16,6 +16,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:codemod/codemod.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -40,7 +41,7 @@ Future<Null> testCodemod(
   String description,
   String goldPath, {
   List<String> args,
-  body(String out, String err),
+  void Function(String out, String err) body,
   int expectedExitCode,
   String script,
   List<String> stdinLines,
@@ -61,7 +62,10 @@ Future<Null> testCodemod(
             '${pubGetResult.stderr}');
       }
 
-      final processArgs = [script ?? 'codemod.dart']..addAll(args ?? []);
+      final processArgs = [
+        script ?? 'codemod.dart',
+        ...?args,
+      ];
       if (_debug) {
         processArgs.add('--verbose');
       }
@@ -95,8 +99,11 @@ Future<Null> testCodemod(
 }
 
 void expectProjectsMatch(String goldPath, String testPath) {
-  final sortedFiles =
-      Directory(goldPath).listSync(recursive: true).whereType<File>().toList();
+  final sortedFiles = Directory(goldPath)
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where(isNotHiddenFile)
+      .toList();
   sortedFiles.sort((a, b) => a.path.compareTo(b.path));
   for (final file in sortedFiles) {
     final relPath = p.relative(file.path, from: goldPath);
