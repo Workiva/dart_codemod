@@ -16,11 +16,9 @@ import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:io/ansi.dart';
-import 'package:path/path.dart' as path;
 import 'package:source_span/source_span.dart';
 
 import 'constants.dart';
-import 'file_query.dart';
 import 'patch.dart';
 
 /// Returns the result of applying all of the [patches]
@@ -32,11 +30,16 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;
+  Patch prev;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      throw new Exception('Codemod terminated due to overlapping patch.\n'
-          'Overlapping patch: ${patch.toString()}\n'
-          'Updated text: ${patch.updatedText}\n');
+      throw Exception('Codemod terminated due to overlapping patch.\n'
+          'Previous patch:\n'
+          '  $prev\n'
+          '  Updated text: ${prev.updatedText}\n'
+          'Overlapping patch:\n'
+          '  $patch\n'
+          '  Updated text: ${patch.updatedText}\n');
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -46,6 +49,7 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
     buffer.write(patch.updatedText);
 
     lastEdgeOffset = patch.endOffset;
+    prev = patch;
   }
 
   final lastUnmodifiedText = sourceFile.getText(lastEdgeOffset);
@@ -67,7 +71,7 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
     return;
   }
   if (sourceFile.url == null) {
-    throw new ArgumentError('sourceFile.url cannot be null');
+    throw ArgumentError('sourceFile.url cannot be null');
   }
   final updatedContents = applyPatches(sourceFile, patches);
   File(sourceFile.url.path).writeAsStringSync(updatedContents);
@@ -78,17 +82,22 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
 /// The user can either skip the patch and continue running the codemod, or
 /// choose to quit the codemod.
 List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
-  List<Patch> skippedPatches = [];
+  final skippedPatches = <Patch>[];
   final sortedPatches = patches.toList()..sort();
 
   var lastEdgeOffset = 0;
+  Patch prev;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
       stdout.writeln(
           'A patch that overlaps with a previous patch applied was found. '
           'Do you want to skip this patch, or quit the codemod?\n'
-          'Overlapping patch: ${patch.toString()}\n'
-          'Updated text: ${patch.updatedText}\n'
+          'Previous patch:\n'
+          '  $prev\n'
+          '  Updated text: ${prev.updatedText}\n'
+          'Overlapping patch:\n'
+          '  $patch\n'
+          '  Updated text: ${patch.updatedText}\n'
           '(s = skip this patch and apply the rest [default],\n'
           'q = quit)');
 
@@ -108,6 +117,7 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
       }
     }
     lastEdgeOffset = patch.endOffset;
+    prev = patch;
   }
   return skippedPatches;
 }
@@ -121,44 +131,6 @@ int calculateDiffSize(Stdout stdout) {
       // Sane default when there is no terminal.
       : 10;
 }
-
-/// Returns a path filter function that will return true for any file path with
-/// an extension in [extensions], and false otherwise.
-///
-///     final filter = createPathFilter(['.yaml', '.yml']);
-///     filter('./lib/foo.yaml') // true
-///     filter('./lib/foo.yml')  // true
-///     filter('./lib/foo.dart') // false
-bool Function(String path) createPathFilter(Iterable<String> extensions) {
-  return (filePath) =>
-      extensions.any((extension) => extension == path.extension(filePath));
-}
-
-/// Returns true if [filePath] is a Dart file (meaning that its extension is
-/// `.dart`), and false otherwise.
-///
-/// Use this with [FileQuery] to query for Dart files in a directory:
-///     FileQuery.dir(
-///       path: './lib/',
-///       pathFilter: isDartFile
-///     );
-///     // Will find all `.dart` files in `./lib/`
-bool isDartFile(String filePath) => path.extension(filePath) == '.dart';
-
-/// Returns `true` if the given file path looks like it is actual code, and
-/// `false` otherwise. Attempts to filter out common/known non-code paths like
-/// the dotfile directories.
-///
-///     pathLooksLikeCode('lib/codemod.dart')
-///     // true
-///     pathLooksLikeCode('.packages')
-///     // False
-///     pathLooksLikeCode('.dart_tool/pub/bin/sdk-version')
-///     // False
-bool pathLooksLikeCode(String filePath) =>
-    !filePath.contains('/.') &&
-    !(filePath.startsWith('.') && !filePath.startsWith('./')) &&
-    !filePath.startsWith('build/');
 
 /// Prompts the user to select an action via stdin.
 ///

@@ -13,14 +13,24 @@
 // limitations under the License.
 
 @TestOn('vm')
-import 'package:analyzer/analyzer.dart';
+library codemod.test.ast_visiting_suggestor_mixin_test;
+
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
 
-class Simple extends SimpleAstVisitor with AstVisitingSuggestorMixin {
+class Simple extends SimpleAstVisitor<void> with AstVisitingSuggestorMixin {
   @override
-  visitCompilationUnit(_) {
+  void visitCompilationUnit(_) {
+    yieldPatch(0, 1, 'foo');
+  }
+}
+
+class Duplicate extends SimpleAstVisitor<void> with AstVisitingSuggestorMixin {
+  @override
+  void visitCompilationUnit(_) {
+    yieldPatch(0, 1, 'foo');
     yieldPatch(0, 1, 'foo');
   }
 }
@@ -68,6 +78,12 @@ void main() {
         expect(patchesB.single.endOffset, 1);
         expect(patchesB.single.updatedText, 'foo');
         expect(suggestor.sourceFile, sourceFileB);
+      });
+
+      test('should de-duplicate patches', () {
+        final suggestor = Duplicate();
+        final sourceFile = SourceFile.fromString('library foo;');
+        expect(suggestor.generatePatches(sourceFile), hasLength(1));
       });
     });
 

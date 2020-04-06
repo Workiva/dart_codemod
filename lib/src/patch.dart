@@ -15,6 +15,7 @@
 import 'dart:math' as math;
 
 import 'package:io/ansi.dart';
+import 'package:quiver/core.dart';
 import 'package:source_span/source_span.dart';
 
 import 'logging.dart';
@@ -51,6 +52,15 @@ class Patch implements Comparable<Patch> {
 
   @override
   int compareTo(Patch other) => sourceSpan.compareTo(other.sourceSpan);
+
+  @override
+  bool operator ==(other) =>
+      other is Patch &&
+      sourceSpan == other.sourceSpan &&
+      updatedText == other.updatedText;
+
+  @override
+  int get hashCode => hash2(sourceSpan, updatedText);
 
   /// True if this patch is a no-operation, meaning that the updated text is the
   /// same as the existing text at the span. False otherwise.

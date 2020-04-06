@@ -7,9 +7,12 @@ void main(List<String> args) {
   run(args);
 }
 
-void run(List<String> args, {bool defaultYes, String additionalHelpOutput, String changesRequiredOutput}) {
+void run(List<String> args,
+    {bool defaultYes,
+    String additionalHelpOutput,
+    String changesRequiredOutput}) {
   exitCode = runInteractiveCodemod(
-    FileQuery.dir(pathFilter: (path) => path.endsWith('.txt')),
+    ['file1.txt', 'file2.txt', 'skip.txt'],
     TestSuggestor(),
     args: args,
     defaultYes: defaultYes,
@@ -20,8 +23,10 @@ void run(List<String> args, {bool defaultYes, String additionalHelpOutput, Strin
 
 class TestSuggestor implements Suggestor {
   @override
-  bool shouldSkip(String sourceFileContents) => sourceFileContents.startsWith('skip');
+  bool shouldSkip(String sourceFileContents) =>
+      sourceFileContents.startsWith('skip');
 
+  @override
   Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
     final lineLength = 'line #'.length;
 
