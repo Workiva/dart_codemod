@@ -41,8 +41,8 @@ class DeprecatedRemover extends GeneralizingAstVisitor<void>
   }
 }
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
     filePathsFromGlob(Glob('deprecated_remover_fixtures/**.dart')),
     DeprecatedRemover(),
     args: args,

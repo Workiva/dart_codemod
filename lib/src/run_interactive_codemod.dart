@@ -14,6 +14,10 @@
 
 import 'dart:io';
 
+// ignore: deprecated_member_use
+import 'package:analyzer/analyzer.dart';
+import 'package:path/path.dart' as path;
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:args/args.dart';
 import 'package:io/ansi.dart';
 import 'package:io/io.dart';
@@ -70,7 +74,7 @@ import 'util.dart';
 /// Additionally, you can retain ansi color highlighting of these logs when
 /// redirecting to a file by passing the `--stderr-assume-tty` flag:
 ///     $ dart example_codemod.dart --verbose --stderr-assume-tty 2>stderr.txt
-int runInteractiveCodemod(
+Future<int> runInteractiveCodemod(
   Iterable<String> filePaths,
   Suggestor suggestor, {
   Iterable<String> args,
@@ -104,14 +108,14 @@ int runInteractiveCodemod(
 ///       query,
 ///       AggregateSuggestor([SuggestorA(), SuggestorB()]),
 ///     );
-int runInteractiveCodemodSequence(
+Future<int> runInteractiveCodemodSequence(
   Iterable<String> filePaths,
   Iterable<Suggestor> suggestors, {
   Iterable<String> args,
   bool defaultYes = false,
   String additionalHelpOutput,
   String changesRequiredOutput,
-}) {
+}) async {
   try {
     ArgResults parsedArgs;
     try {
@@ -137,12 +141,28 @@ int runInteractiveCodemodSequence(
       }
       return ExitCode.success.code;
     }
-
+    final doResolve = suggestors.any((s) => s is ResolvedSuggestor);
+    final resolved = <String, CompilationUnit>{};
+    if (doResolve) {
+      stderr.writeln('Analyzing...');
+      final collection = AnalysisContextCollection(
+          includedPaths: filePaths.map((p) => path.canonicalize(p)).toList());
+      for (final file in filePaths) {
+        final f = path.canonicalize(file);
+        final context = collection.contextFor(f);
+        final unit = await context.currentSession.getResolvedUnit(f);
+        resolved[file] = unit.unit;
+      }
+      stderr.writeln('Finished Analysis');
+    } else {
+      stderr.writeln('No analysis required');
+    }
     return overrideAnsiOutput<int>(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
             defaultYes: defaultYes,
-            changesRequiredOutput: changesRequiredOutput));
+            changesRequiredOutput: changesRequiredOutput,
+            resolved: resolved));
   } catch (error, stackTrace) {
     stderr..writeln('Uncaught exception:')..writeln(error)..writeln(stackTrace);
     return ExitCode.software.code;
@@ -182,7 +202,9 @@ final codemodArgParser = ArgParser()
 
 int _runInteractiveCodemod(Iterable<String> filePaths,
     Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool defaultYes, String changesRequiredOutput}) {
+    {bool defaultYes,
+    String changesRequiredOutput,
+    Map<String, CompilationUnit> resolved}) {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
   final verbose = parsedArgs['verbose'] ?? false;
@@ -206,6 +228,7 @@ int _runInteractiveCodemod(Iterable<String> filePaths,
 
   final skippedPatches = <Patch>[];
   stdout.writeln('searching...');
+
   for (final suggestor in suggestors) {
     for (final filePath in filePaths) {
       logger.fine('file: filePath');
@@ -236,7 +259,16 @@ int _runInteractiveCodemod(Iterable<String> filePaths,
       final appliedPatches = <Patch>[];
 
       try {
-        for (final patch in suggestor.generatePatches(sourceFile)) {
+        Iterable<Patch> patchIter;
+        if (suggestor is ResolvedSuggestor) {
+          patchIter = suggestor.generatePatches(
+            sourceFile,
+            compilationUnit: resolved[file.path],
+          );
+        } else {
+          patchIter = suggestor.generatePatches(sourceFile);
+        }
+        for (final patch in patchIter) {
           if (patch.isNoop) {
             // Patch suggested, but without any changes. This is probably an
             // error in the suggestor implementation.
