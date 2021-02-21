@@ -2,7 +2,7 @@ name: codemod_test_fixture
 version: 0.0.0
 private: true
 environment:
-    sdk: '>=2.10.0 <3.0.0'
+    sdk: '>=2.3.0 <3.0.0'
 dev_dependencies:
   codemod:
     path: ../../../
