@@ -23,5 +23,10 @@ export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;
 export 'src/suggestors.dart'
-    show AggregateSuggestor, AstVisitingSuggestorMixin, Suggestor;
+    show
+        AggregateSuggestor,
+        AstVisitingSuggestorMixin,
+        Suggestor,
+        ResolvedSuggestor,
+        ResolvedAstVisitingSuggestorMixin;
 export 'src/util.dart' show applyPatches;

@@ -53,8 +53,8 @@ class RegexSubstituter implements Suggestor {
   }
 }
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
     ['regex_substituter_fixtures/pubspec.yaml'],
     RegexSubstituter(),
     args: args,

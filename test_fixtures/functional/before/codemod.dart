@@ -3,15 +3,15 @@ import 'dart:io';
 import 'package:codemod/codemod.dart';
 import 'package:source_span/source_span.dart';
 
-void main(List<String> args) {
-  run(args);
+void main(List<String> args) async {
+  await run(args);
 }
 
-void run(List<String> args,
+Future<void> run(List<String> args,
     {bool defaultYes,
     String additionalHelpOutput,
-    String changesRequiredOutput}) {
-  exitCode = runInteractiveCodemod(
+    String changesRequiredOutput}) async {
+  exitCode = await runInteractiveCodemod(
     ['file1.txt', 'file2.txt', 'skip.txt'],
     TestSuggestor(),
     args: args,

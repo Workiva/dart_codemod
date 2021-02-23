@@ -1,3 +1,13 @@
+## [0.3.0](https://github.com/Workiva/dart_codemod/compare/0.2.0...0.3.0)
+
+- **Breaking Change:** `runInteractiveCodemod` is now async, and returns `Future<int>` instead of `int`
+
+- Adds a `ResolvedSuggestor` interface for Suggestors that require static analysis context 
+
+- Adds `ResolvedAstVisitingSuggestorMixin` which should be used for codemods that require static analysis
+
+- Add example of such a codemod: see [example/codemod_analysis_required.dart](https://github.com/Workiva/dart_codemod/tree/master/example/codemod_analysis_required.dart)
+
 ## [0.2.0](https://github.com/Workiva/dart_codemod/compare/0.1.5...0.2.0)
 
 - **Breaking Change:** remove the `FileQuery` class. The

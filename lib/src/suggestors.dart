@@ -109,6 +109,40 @@ abstract class Suggestor {
   Iterable<Patch> generatePatches(SourceFile sourceFile);
 }
 
+/// A [Suggestor] that requires a resolved dart Ast for generating patches.
+///
+/// Allows for more static analysis available in the AST such as static types
+///
+/// See [ResolvedAstVisitingSuggestorMixin] for an example
+abstract class ResolvedSuggestor extends Suggestor {
+  /// Should return true if it can be determined from the [sourceFileContents]
+  /// that the file will not yield any [Patch]es, and false otherwise.
+  ///
+  /// Use this method as way to avoid having [generatePatches] called
+  /// unnecessarily, which may be beneficial if it is an expensive operation.
+  ///
+  /// If this is not a concern, subclasses should implement this method to
+  /// always return false:
+  ///     @override
+  ///     bool shouldSkip(_) => false;
+  @override
+  bool shouldSkip(String sourceFileContents);
+
+  /// Should return [Patch]es for the given [sourceFile] within the resolved
+  /// [compilationUnit] that will then be shown to the user via the CLI to
+  /// be accepted or skipped.
+  @override
+  Iterable<Patch> generatePatches(SourceFile sourceFile,
+      {CompilationUnit compilationUnit});
+}
+
+/// Keeps the analyzed compilation unit and the source file.
+class SourceCompilationUnit {
+  SourceCompilationUnit(this.file, this.unit);
+  final SourceFile file;
+  final CompilationUnit unit;
+}
+
 /// Aggregates multiple [Suggestor]s into a single suggestor that yields the
 /// collective set of [Patch]es generted by each individual suggestor for each
 /// source file.
@@ -191,6 +225,84 @@ mixin AstVisitingSuggestorMixin<R> on AstVisitor<R> implements Suggestor {
     final parsed =
         parseString(content: sourceFile.getText(0), path: '${sourceFile.url}');
     parsed.unit.accept(this);
+    yield* _patches;
+  }
+
+  @override
+  bool shouldSkip(_) => false;
+
+  void yieldPatch(int startOffset, int endOffset, String updatedText) {
+    if (sourceFile == null) {
+      throw StateError('yieldPatch() called outside of a visiting context. '
+          'Ensure that it is only called inside an AST visitor method.');
+    }
+    _patches.add(Patch(
+      sourceFile,
+      sourceFile.span(startOffset, endOffset),
+      updatedText,
+    ));
+  }
+}
+
+/// Mixin that implements the [ResolvedSuggestor] interface and makes it easier to write
+/// suggestors that operate as an [AstVisitor].
+///
+/// With the [AstVisitor] pattern, you can override the applicable `visit`
+/// methods to find what you're looking for and generate patches at specific
+/// locations in the source using the offsets provided by the [AstNode]s and
+/// tokens therein.
+///
+/// Note that this mixin provides an implementation of [generatePatches] that
+/// should not need to be overridden as well as a default implementation of
+/// [shouldSkip] that always returns false. Subclasses may override [shouldSkip]
+/// if it is beneficial to do so.
+///
+/// The easiest way to understand this pattern is to see an example. Consider
+/// the following suggestor that aims to change all modulus operations checking
+/// for even or odd to the getters .isEven and .isOdd:
+/// ```dart
+///    import 'package:analyzer/analyzer.dart';
+///    import 'package:codemod/codemod.dart';
+///
+///
+///    class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
+///      with ResolvedAstVisitingSuggestorMixin {
+///      @override
+///      void visitBinaryExpression(BinaryExpression node) {
+///        if (node.leftOperand is BinaryExpression &&
+///            node.rightOperand is IntegerLiteral) {
+///          final left = node.leftOperand as BinaryExpression;
+///          final right = node.rightOperand as IntegerLiteral;
+///          if (left.operator.stringValue == '%' &&
+///              node.operator.stringValue == '==') {
+///            if (left.leftOperand.staticType.isDartCoreInt) {
+///              if (right.value == 0) {
+///                yieldPatch(left.leftOperand.end, node.end, '.isEven');
+///              }
+///              if (right.value == 1) {
+///                yieldPatch(left.leftOperand.end, node.end, '.isOdd');
+///              }
+///            }
+///          }
+///        }
+///        return super.visitBinaryExpression(node);
+///      }
+///    }
+///```
+mixin ResolvedAstVisitingSuggestorMixin<R> on AstVisitor<R>
+    implements ResolvedSuggestor {
+  final _patches = <Patch>{};
+
+  SourceFile _sourceFile;
+  SourceFile get sourceFile => _sourceFile;
+
+  bool get doResolve => false;
+  @override
+  Iterable<Patch> generatePatches(SourceFile sourceFile,
+      {CompilationUnit compilationUnit}) sync* {
+    _patches.clear();
+    _sourceFile = sourceFile;
+    compilationUnit.accept(this);
     yield* _patches;
   }
 

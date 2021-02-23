@@ -55,8 +55,8 @@ class LicenseHeaderInserter implements Suggestor {
   }
 }
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
     filePathsFromGlob(Glob('license_header_fixtures/**.dart')),
     LicenseHeaderInserter(),
     args: args,
