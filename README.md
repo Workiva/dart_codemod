@@ -25,29 +25,29 @@ int runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
 ```
 
 Calling this will tell codemod run the `suggestor` on each file in `files`. For
-each file, the suggestor will return a list of patches that should be suggested
-to the user. As patches are suggested and accepted by the user, codemod handles
-applying them to the files and writing the result to disk.
+each file, the suggestor will generate a stream of patches that should be
+suggested to the user. As patches are suggested and accepted by the user,
+codemod handles applying them to the files and writing the result to disk.
 
 ## Writing a Suggestor
 
-This library provides `Suggestor`, but it is just an interface with two methods:
+This library provides `Suggestor`, but it is just an interface one method:
 
 ```dart
 abstract class Suggestor {
-  bool shouldSkip(String sourceFileContents);
-  Iterable<Patch> generatePatches(SourceFile sourceFile);
+  Iterable<Patch> generatePatches(FileContext context);
 }
 ```
 
-Codemod will read the contents of each file returned from the query and first
-pass it to `shouldSkip()`. This provides a way to short-circuit the potentially
-expensive `generatePatches()` method if need be.
+Codemod creates the `FileContext` instance for each file path it is given and
+passes it to the suggestor; it is just a helper class with methods for reading
+the file's contents and analyzing it with [`package:analyzer`][analyzer].
 
-If not skipped, the file contents will be passed to `generatePatches()` in the
-form of a [`SourceFile` from the `source_span` package][SourceFile]. Operating
-on this model makes it easy to create patches at specific offsets within the
-file.
+The context can be used to get the file's contents (`context.sourceText`), a
+`SourceFile` representation (`context.sourceFile`) for easily referencing spans
+of text within the file, or, for Dart files, the analyzed formats like the
+`CompilationUnit` (unresolved or resolved) or the fully resolved
+`LibraryElement`.
 
 ### Suggestor Example: Insert License Headers
 
@@ -65,25 +65,20 @@ final String licenseHeader = '''
 
 class LicenseHeaderInserter implements Suggestor {
   @override
-  bool shouldSkip(String sourceFileContents) =>
-      sourceFileContents.trimLeft().startsWith(licenseHeader);
+  Stream<Patch> generatePatches(FileContext context) async* {
+    // Skip if license header already exists.
+    if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
 
-  @override
-  Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
-    yield Patch(
-      sourceFile,
-      // The span across which the patch should be applied.
-      sourceFile.span(
-        // Start offset.
-        // 0 means "insert at the beginning of the file."
-        0,
-        // End offset.
-        // Using the same offset as the start offset here means that the patch
-        // is being inserted at this point instead of replacing a span of text.
-        0,
-      ),
+    yield context.patch(
       // Text to insert.
       licenseHeader,
+      // Start offset.
+      // 0 means "insert at the beginning of the file."
+      0,
+      // End offset.
+      // Using the same offset as the start offset here means that the patch
+      // is being inserted at this point instead of replacing a span of text.
+      0,
     );
   }
 }
@@ -111,21 +106,13 @@ const String targetConstraint = '^1.0.0';
 
 class RegexSubstituter implements Suggestor {
   @override
-  bool shouldSkip(String sourceFileContents) => false;
-
-  @override
-  Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
-    final contents = sourceFile.getText(0);
-    for (final match in pattern.allMatches(contents)) {
+  Stream<Patch> generatePatches(FileContext context) async* {
+    for (final match in pattern.allMatches(context.sourceText)) {
       final line = match.group(0);
       final constraint = match.group(1);
       final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
 
-      yield Patch(
-        sourceFile,
-        sourceFile.span(match.start, match.end),
-        updated,
-      );
+      yield context.patch(updated, match.start, match.end);
     }
   }
 }
@@ -146,7 +133,7 @@ import 'package:analyzer/analyzer.dart';
 import 'package:codemod/codemod.dart';
 
 class DeprecatedRemover extends GeneralizingAstVisitor
-    with AstVisitingSuggestorMixin {
+    with AstVisitingSuggestor {
   static bool isDeprecated(AnnotatedNode node) =>
       node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
 
@@ -168,20 +155,35 @@ annotation and yielding a patch with an empty string across the entire node,
 which is effectively a deletion.
 
 You may notice that in this example, the suggestor is no longer implementing
-`generatePatches()` – instead, we use the `AstVisitingSuggestorMixin`. This
-mixin handles parsing the AST for the given `SourceFile` and starting the
-visitor pattern so that all you have to do is override the applicable `visit`
-methods.
+`generatePatches()` – instead, we use `AstVisitingSuggestor`. This mixin handles
+obtaining the `CompilationUnit` for the given file and starting the visitor
+pattern so that all you have to do is override the applicable `visit` methods.
 
-Additionally, although the `GeneralizingAstVisitor` was the appropriate choice
-for this suggestor, any `AstVisitor` will work. Choose whichever one fits the
-job.
+Although the `GeneralizingAstVisitor` was the appropriate choice for this
+suggestor, any `AstVisitor` will work. Choose whichever one fits the job.
+
+Note that by default `AstVisitingSuggestor` operates on a Dart file's
+_unresolved_ AST, but you can override `shouldResolveAst()` to tell the mixin to
+resolve the AST:
+
+```dart
+class ExampleSuggestor extends GeneralizingAstVisitor
+    with AstVisitingSuggestor {
+  @override
+  bool shouldResolveAst(FileContext context) => true;
+
+  ...
+}
+```
+
+Similarly, there is an `ElementVisitingSuggestor` that works with any
+`ElementVisitor` and operates on the file's fully resolved `LibraryElement`.
 
 > If you're not familiar with the analyzer API, in particular the `AstNode`
-> class hierarchy and the `AstVisitor` pattern, it may be a good opportunity to
-> browse the analyzer source code or look at the AST visiting suggestor codemods
-> that are linked below in the [references section](#references) to see what is
-> possible with this approach.
+> class hierarchy and the `AstVisitor`/`ElementVisitor` pattern, it may be a
+> good opportunity to browse the analyzer source code or look at the AST
+> visiting suggestor codemods that are linked below in the
+> [references section](#references) to see what is possible with this approach.
 
 ## Running a Codemod
 
@@ -211,8 +213,8 @@ If we were to run the 3 suggestor examples from above, it would like like so:
 import 'dart:io';
 import 'package:codemod/codemod.dart';
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
     ['pubspec.yaml'],
     RegexSubstituter(),
     args: args,
@@ -228,8 +230,8 @@ import 'dart:io';
 import 'package:codemod/codemod.dart';
 import 'package:glob/glob.dart';
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
     filePathsFromGlob(Glob('**.dart', recursive: true)),
     LicenseHeaderInserter(),
     args: args,
@@ -245,8 +247,8 @@ import 'dart:io';
 import 'package:codemod/codemod.dart';
 import 'package:glob/glob.dart';
 
-void main(List<String> args) {
-  exitCode = runInteractiveCodemod(
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
     filePathsFromGlob(Glob('**.dart', recursive: true)),
     DeprecatedRemover(),
     args: args,
@@ -255,7 +257,7 @@ void main(List<String> args) {
 ```
 
 Run the `.dart` file directly or package it up as an executable and publish it
-on pub!
+to pub!
 
 ## Additional Options
 
@@ -270,8 +272,8 @@ provided by this library:
 
     import 'package:codemod/codemod.dart';
 
-    void main(List<String> args) {
-      exitCode = runInteractiveCodemod(
+    void main(List<String> args) async {
+      exitCode = await runInteractiveCodemod(
         [...], // input files
         AggregateSuggestor([
           SuggestorA(),
@@ -288,8 +290,8 @@ provided by this library:
 
     import 'package:codemod/codemod.dart';
 
-    void main(List<String> args) {
-      exitCode = runInteractiveCodemodSequence(
+    void main(List<String> args) async {
+      exitCode = await runInteractiveCodemodSequence(
         [...], // input files
         [
           PhaseOneSuggestor(),
@@ -307,12 +309,15 @@ provided by this library:
 
 ## Testing Suggestors
 
+_TODO: create a `codemod_test` package that exports `applySuggestor()` and
+`fileContextForTest()` and update the following docs_
+
 Testing suggestors is relatively easy for two reasons:
 
 - The API surface area is small (most of the time you only need to test the
   `generatePatches()` method)
 
-- The list of patches returned by `generatePatches()` can be applied to the
+- The stream of patches returned by `generatePatches()` can be applied to the
   input `SourceFile` to obtain a `String` output, which is trivial to examine in
   order to assert correctness.
 

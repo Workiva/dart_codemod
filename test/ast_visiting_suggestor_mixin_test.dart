@@ -17,80 +17,81 @@ library codemod.test.ast_visiting_suggestor_mixin_test;
 
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
 
-class Simple extends SimpleAstVisitor<void> with AstVisitingSuggestorMixin {
+import 'util.dart';
+
+class Simple extends SimpleAstVisitor<void> with AstVisitingSuggestor {
   @override
   void visitCompilationUnit(_) {
-    yieldPatch(0, 1, 'foo');
+    yieldPatch('foo', 0, 1);
   }
 }
 
-class Duplicate extends SimpleAstVisitor<void> with AstVisitingSuggestorMixin {
+class Duplicate extends SimpleAstVisitor<void> with AstVisitingSuggestor {
   @override
   void visitCompilationUnit(_) {
-    yieldPatch(0, 1, 'foo');
-    yieldPatch(0, 1, 'foo');
+    yieldPatch('foo', 0, 1);
+    yieldPatch('foo', 0, 1);
   }
 }
 
 void main() {
   group('AstVisitingSuggestorMixin', () {
-    test('should make the sourceFile available', () {
+    test('should make the FileContext available', () async {
       final suggestor = Simple();
-      final sourceFile = SourceFile.fromString(' ');
-      suggestor.generatePatches(sourceFile).toList();
-      expect(suggestor.sourceFile, sourceFile);
-    });
-
-    test('shouldSkip() returns false by default', () {
-      final suggestor = Simple();
-      expect(suggestor.shouldSkip(''), isFalse);
+      final context = await fileContextForTest('test.dart', 'library test;');
+      await suggestor.generatePatches(context).drain();
+      expect(suggestor.context, same(context));
     });
 
     group('generatePatches()', () {
-      test('should parse compilation unit, visit it, and yield patches', () {
+      test('should get compilation unit, visit it, and yield patches',
+          () async {
         final suggestor = Simple();
-        final sourceFile = SourceFile.fromString('library lib;');
-        final patches = suggestor.generatePatches(sourceFile);
-        expect(patches, hasLength(1));
-        expect(patches.single.startOffset, 0);
-        expect(patches.single.endOffset, 1);
-        expect(patches.single.updatedText, 'foo');
+        final context = await fileContextForTest('lib.dart', 'library lib;');
+        expect(
+            suggestor.generatePatches(context),
+            emitsInOrder([
+              isA<Patch>()
+                  .having((p) => p.startOffset, 'startOffset', 0)
+                  .having((p) => p.endOffset, 'endOffset', 1)
+                  .having((p) => p.updatedText, 'updatedText', 'foo'),
+              emitsDone,
+            ]));
       });
 
-      test('should be able to be run multiple times', () {
+      test('should be able to be run multiple times', () async {
         final suggestor = Simple();
+        final patchMatchers = orderedEquals([
+          isA<Patch>()
+              .having((p) => p.startOffset, 'startOffset', 0)
+              .having((p) => p.endOffset, 'endOffset', 1)
+              .having((p) => p.updatedText, 'updatedText', 'foo'),
+        ]);
 
-        final sourceFileA = SourceFile.fromString('library a;');
-        final patchesA = suggestor.generatePatches(sourceFileA);
-        expect(patchesA, hasLength(1));
-        expect(patchesA.single.startOffset, 0);
-        expect(patchesA.single.endOffset, 1);
-        expect(patchesA.single.updatedText, 'foo');
-        expect(suggestor.sourceFile, sourceFileA);
+        final contextA = await fileContextForTest('a.dart', 'library a;');
+        final patchesA = await suggestor.generatePatches(contextA).toList();
+        expect(patchesA, patchMatchers);
+        expect(suggestor.context, same(contextA));
 
-        final sourceFileB = SourceFile.fromString('library b;');
-        final patchesB = suggestor.generatePatches(sourceFileB);
-        expect(patchesB, hasLength(1));
-        expect(patchesB.single.startOffset, 0);
-        expect(patchesB.single.endOffset, 1);
-        expect(patchesB.single.updatedText, 'foo');
-        expect(suggestor.sourceFile, sourceFileB);
+        final contextB = await fileContextForTest('a.dart', 'library a;');
+        final patchesB = await suggestor.generatePatches(contextB).toList();
+        expect(patchesB, patchMatchers);
+        expect(suggestor.context, contextB);
       });
 
-      test('should de-duplicate patches', () {
+      test('should de-duplicate patches', () async {
         final suggestor = Duplicate();
-        final sourceFile = SourceFile.fromString('library foo;');
-        expect(suggestor.generatePatches(sourceFile), hasLength(1));
+        final context = await fileContextForTest('foo.dart', 'library foo;');
+        expect(await suggestor.generatePatches(context).toList(), hasLength(1));
       });
     });
 
     test(
         'yieldPatch() should throw StateError if called outside generatePatches()',
         () {
-      expect(() => Simple().yieldPatch(0, 0, ''), throwsStateError);
+      expect(() => Simple().yieldPatch('', 0, 0), throwsStateError);
     });
   });
 }

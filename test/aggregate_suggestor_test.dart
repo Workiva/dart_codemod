@@ -15,33 +15,27 @@
 @TestOn('vm')
 import 'package:codemod/codemod.dart';
 import 'package:mockito/mockito.dart';
-import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
+
+import 'util.dart';
 
 class BaseSuggestor implements Suggestor {
   @override
-  bool shouldSkip(_) => false;
-
-  @override
-  Iterable<Patch> generatePatches(_) sync* {}
-}
-
-class AlwaysSkips extends BaseSuggestor {
-  @override
-  bool shouldSkip(_) => true;
-
-  @override
-  Iterable<Patch> generatePatches(_) => [ShouldBeSkippedPatch()];
+  Stream<Patch> generatePatches(_) async* {}
 }
 
 class FooSuggestor extends BaseSuggestor {
   @override
-  Iterable<Patch> generatePatches(_) => [FooPatch()];
+  Stream<Patch> generatePatches(_) async* {
+    yield FooPatch();
+  }
 }
 
 class BarSuggestor extends BaseSuggestor {
   @override
-  Iterable<Patch> generatePatches(_) => [BarPatch()];
+  Stream<Patch> generatePatches(_) async* {
+    yield BarPatch();
+  }
 }
 
 class MockPatch extends Mock implements Patch {}
@@ -68,33 +62,15 @@ void main() {
       expect(aggregate.aggregatedSuggestors, [foo, bar]);
     });
 
-    test('shouldSkip() always returns false', () {
-      final aggregate = AggregateSuggestor([AlwaysSkips()]);
-      expect(aggregate.shouldSkip(''), isFalse);
-    });
-
     group('generatePatches()', () {
-      test('skips suggestors that return true from shouldSkip()', () {
-        final aggregate = AggregateSuggestor([
-          AlwaysSkips(),
-          FooSuggestor(),
-        ]);
-        final sourceFile = SourceFile.fromString('test');
-        final patches = aggregate.generatePatches(sourceFile);
-        expect(patches, hasLength(1));
-        expect(patches.single, TypeMatcher<FooPatch>());
-      });
-
-      test('should yield patches from each suggestor', () {
+      test('should yield patches from each suggestor', () async {
         final aggregate = AggregateSuggestor([
           FooSuggestor(),
           BarSuggestor(),
         ]);
-        final sourceFile = SourceFile.fromString('test');
-        final patches = aggregate.generatePatches(sourceFile).toList();
-        expect(patches, hasLength(2));
-        expect(patches[0], TypeMatcher<FooPatch>());
-        expect(patches[1], TypeMatcher<BarPatch>());
+        final context = await fileContextForTest('test.dart', 'test');
+        expect(aggregate.generatePatches(context),
+            emitsInOrder([isA<FooPatch>(), isA<BarPatch>()]));
       });
     });
   });

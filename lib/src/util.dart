@@ -15,11 +15,17 @@
 import 'dart:math' as math;
 import 'dart:io';
 
+import 'package:codemod/codemod.dart';
 import 'package:io/ansi.dart';
 import 'package:source_span/source_span.dart';
 
 import 'constants.dart';
 import 'patch.dart';
+
+Future<String> applySuggestor(FileContext context, Suggestor suggestor) async {
+  final patches = await suggestor.generatePatches(context).toList();
+  return applyPatches(context.sourceFile, patches);
+}
 
 /// Returns the result of applying all of the [patches]
 /// (insertions/deletions/replacements) to the contents of [sourceFile].

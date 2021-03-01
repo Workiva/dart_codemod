@@ -11,8 +11,5 @@ void main(List<String> args) async {
 
 class NoopSuggestor implements Suggestor {
   @override
-  bool shouldSkip(_) => true;
-
-  @override
-  Iterable<Patch> generatePatches(_) => [];
+  Stream<Patch> generatePatches(_) => Stream.empty();
 }

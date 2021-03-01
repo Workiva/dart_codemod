@@ -15,11 +15,12 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
 
+import '../util.dart';
+
 class DeprecatedRemover extends GeneralizingAstVisitor<void>
-    with AstVisitingSuggestorMixin {
+    with AstVisitingSuggestor {
   static bool isDeprecated(AnnotatedNode node) =>
       node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
 
@@ -28,15 +29,15 @@ class DeprecatedRemover extends GeneralizingAstVisitor<void>
     if (isDeprecated(node)) {
       // Remove the node by replacing the span from its start offset to its end
       // offset with an empty string.
-      yieldPatch(node.offset, node.end, '');
+      yieldPatch('', node.offset, node.end);
     }
   }
 }
 
 void main() {
   group('Examples: DeprecatedRemover', () {
-    test('removes deprecated variable', () {
-      final sourceFile = SourceFile.fromString('''
+    test('removes deprecated variable', () async {
+      final context = await fileContextForTest('test.dart', '''
 // Not deprecated.
 var foo = 'foo';
 @deprecated
@@ -45,10 +46,8 @@ var bar = 'bar';''');
 // Not deprecated.
 var foo = 'foo';
 ''';
-
-      final patches = DeprecatedRemover().generatePatches(sourceFile);
-      expect(patches, hasLength(1));
-      expect(applyPatches(sourceFile, patches), expectedOutput);
+      expect(
+          await applySuggestor(context, DeprecatedRemover()), expectedOutput);
     });
   });
 }
