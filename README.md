@@ -309,24 +309,28 @@ provided by this library:
 
 ## Testing Suggestors
 
-_TODO: create a `codemod_test` package that exports `applySuggestor()` and
-`fileContextForTest()` and update the following docs_
-
 Testing suggestors is relatively easy for two reasons:
 
 - The API surface area is small (most of the time you only need to test the
-  `generatePatches()` method)
+  `generatePatches()` method).
 
-- The stream of patches returned by `generatePatches()` can be applied to the
-  input `SourceFile` to obtain a `String` output, which is trivial to examine in
-  order to assert correctness.
+- The stream of patches returned by `generatePatches()` can be applied to obtain
+  a `String` output, which can easily be compared against an expected output.
 
 In other words, all you need to do is determine a sufficient set of inputs and
 their respective expected outputs.
 
-To help out, this library exports the `applyPatches(sourceFile, patches)`
-function that it uses internally to make it easy to compare the result of a
-suggestor's patches to the expected output.
+To help out, the `package:codemod/test.dart` library exports a few functions.
+These two should be sufficient for writing most suggestor tests:
+
+- `fileContextForTest(name, contents)` for creating a `FileContext` that can be
+used as the input for `Suggestor.generatePatches()`
+- `expectSuggestorGeneratesPatches(suggestor, context, resultMatcher)` for
+asserting that a suggestor produces the expected result for a given input
+
+If, however, you need to examine the generated patches more closely, you can
+call `Suggestor.generatePatches()` yourself and then use the
+`applyPatches(sourceFile, patches)` function to get the resulting output.
 
 Let's use the `DeprecatedRemover` suggestor example from above to demonstrate
 testing:
@@ -338,8 +342,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('DeprecatedRemover', () {
-    test('removes deprecated variable', () {
-      final sourceFile = SourceFile.fromString('''
+    test('removes deprecated variable', () async {
+      final context = await fileContextForTest('test.dart', '''
 // Not deprecated.
 var foo = 'foo';
 @deprecated
@@ -348,10 +352,8 @@ var bar = 'bar';''');
 // Not deprecated.
 var foo = 'foo';
 ''';
-
-      final patches = DeprecatedRemover().generatePatches(sourceFile);
-      expect(patches, hasLength(1));
-      expect(applyPatches(sourceFile, patches), expectedOutput);
+      expectSuggestorGeneratesPatches(
+          DeprecatedRemover(), context, expectedOutput);
     });
   });
 }

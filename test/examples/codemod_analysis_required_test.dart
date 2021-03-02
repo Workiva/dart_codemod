@@ -15,9 +15,8 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
-
-import '../util.dart';
 
 /// Removes all modulus operations on the int type and refactors them to use
 /// [int.isEven] and [int.isOdd].
@@ -72,8 +71,8 @@ var bar = (250 + 2).isOdd;
 // No changes, not int modulus
 var baz = 25.0 % 2 == 0;
 ''';
-      expect(await applySuggestor(context, IsEvenOrOddSuggestor()),
-          expectedOutput);
+      expectSuggestorGeneratesPatches(
+          IsEvenOrOddSuggestor(), context, expectedOutput);
     });
   });
 }

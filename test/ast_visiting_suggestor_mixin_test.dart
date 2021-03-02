@@ -17,9 +17,8 @@ library codemod.test.ast_visiting_suggestor_mixin_test;
 
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
-
-import 'util.dart';
 
 class Simple extends SimpleAstVisitor<void> with AstVisitingSuggestor {
   @override

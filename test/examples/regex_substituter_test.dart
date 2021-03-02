@@ -14,9 +14,8 @@
 
 @TestOn('vm')
 import 'package:codemod/codemod.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
-
-import '../util.dart';
 
 final RegExp pattern = RegExp(
   r'''^\s*codemod:\s*([\d\s"'<>=^.]+)\s*$''',
@@ -49,7 +48,8 @@ dependencies:
 dependencies:
   codemod: ^1.0.0
 ''';
-      expect(await applySuggestor(context, RegexSubstituter()), expectedOutput);
+      expectSuggestorGeneratesPatches(
+          RegexSubstituter(), context, expectedOutput);
     });
   });
 }

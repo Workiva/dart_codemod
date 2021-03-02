@@ -15,9 +15,8 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
-
-import '../util.dart';
 
 class DeprecatedRemover extends GeneralizingAstVisitor<void>
     with AstVisitingSuggestor {
@@ -46,8 +45,8 @@ var bar = 'bar';''');
 // Not deprecated.
 var foo = 'foo';
 ''';
-      expect(
-          await applySuggestor(context, DeprecatedRemover()), expectedOutput);
+      expectSuggestorGeneratesPatches(
+          DeprecatedRemover(), context, expectedOutput);
     });
   });
 }

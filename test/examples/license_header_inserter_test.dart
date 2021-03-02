@@ -14,9 +14,8 @@
 
 @TestOn('vm')
 import 'package:codemod/codemod.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
-
-import '../util.dart';
 
 final String licenseHeader = '''
 // Lorem ispum license.
@@ -47,8 +46,8 @@ void main() {
     test('inserts missing header', () async {
       final context = await fileContextForTest('foo.dart', 'library foo;');
       final expectedOutput = '${licenseHeader}library foo;';
-      expect(await applySuggestor(context, LicenseHeaderInserter()),
-          expectedOutput);
+      expectSuggestorGeneratesPatches(
+          LicenseHeaderInserter(), context, expectedOutput);
     });
   });
 }

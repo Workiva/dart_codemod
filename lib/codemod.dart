@@ -27,4 +27,3 @@ export 'src/run_interactive_codemod.dart'
 export 'src/suggestor.dart' show Suggestor;
 export 'src/suggestor_mixins.dart'
     show AstVisitingSuggestor, ElementVisitingSuggestor;
-export 'src/util.dart' show applyPatches, applySuggestor;

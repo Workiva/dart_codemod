@@ -14,10 +14,9 @@
 
 @TestOn('vm')
 import 'package:codemod/codemod.dart';
+import 'package:codemod/test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
-
-import 'util.dart';
 
 class BaseSuggestor implements Suggestor {
   @override

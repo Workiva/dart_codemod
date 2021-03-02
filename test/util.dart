@@ -12,19 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
-import 'package:codemod/codemod.dart';
 import 'package:io/ansi.dart';
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
-import 'package:test_descriptor/test_descriptor.dart' as d;
-
-Future<FileContext> fileContextForTest(String name, String sourceText) async {
-  await d.file(name, sourceText).create();
-  final path = p.canonicalize(p.join(d.sandbox, name));
-  final collection = AnalysisContextCollection(includedPaths: [path]);
-  return FileContext(path, collection);
-}
 
 /// Defines a test and wraps the [body] in a call to [overrideAnsiOutput] that
 /// forces ANSI output to be enabled. This allows the test to verify that
