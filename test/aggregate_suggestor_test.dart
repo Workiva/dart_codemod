@@ -18,23 +18,14 @@ import 'package:codemod/test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
-class BaseSuggestor implements Suggestor {
-  @override
-  Stream<Patch> generatePatches(_) async* {}
+@override
+Stream<Patch> fooSuggestor(_) async* {
+  yield FooPatch();
 }
 
-class FooSuggestor extends BaseSuggestor {
-  @override
-  Stream<Patch> generatePatches(_) async* {
-    yield FooPatch();
-  }
-}
-
-class BarSuggestor extends BaseSuggestor {
-  @override
-  Stream<Patch> generatePatches(_) async* {
-    yield BarPatch();
-  }
+@override
+Stream<Patch> barSuggestor(_) async* {
+  yield BarPatch();
 }
 
 class MockPatch extends Mock implements Patch {}
@@ -46,31 +37,10 @@ class BarPatch extends MockPatch {}
 class ShouldBeSkippedPatch extends MockPatch {}
 
 void main() {
-  group('AggregateSuggestor', () {
-    test('accepts a list of Suggestors', () {
-      final foo = BaseSuggestor();
-      final bar = BaseSuggestor();
-      final aggregate = AggregateSuggestor([foo, bar]);
-      expect(aggregate.aggregatedSuggestors, [foo, bar]);
-    });
-
-    test('accepts an iterable of Suggestors', () {
-      final foo = BaseSuggestor();
-      final bar = BaseSuggestor();
-      final aggregate = AggregateSuggestor([foo, bar].map((s) => s));
-      expect(aggregate.aggregatedSuggestors, [foo, bar]);
-    });
-
-    group('generatePatches()', () {
-      test('should yield patches from each suggestor', () async {
-        final aggregate = AggregateSuggestor([
-          FooSuggestor(),
-          BarSuggestor(),
-        ]);
-        final context = await fileContextForTest('test.dart', 'test');
-        expect(aggregate.generatePatches(context),
-            emitsInOrder([isA<FooPatch>(), isA<BarPatch>()]));
-      });
-    });
+  test('aggregate should yield patches from each suggestor', () async {
+    final suggestor = aggregateSuggestors([fooSuggestor, barSuggestor]);
+    final context = await fileContextForTest('test.dart', 'test');
+    expect(
+        suggestor(context), emitsInOrder([isA<FooPatch>(), isA<BarPatch>()]));
   });
 }

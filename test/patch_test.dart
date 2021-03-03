@@ -40,12 +40,25 @@ void main() {
     mns = red.wrap('- ');
   });
 
-  group('Patch', () {
+  group('SourcePatch', () {
+    test('from(Patch patch)', () {
+      final patch1 = SourcePatch.from(Patch('one', 0, 5), sourceFile);
+      expect(patch1.startOffset, 0);
+      expect(patch1.endOffset, 5);
+      expect(patch1.updatedText, 'one');
+
+      // Patch with endOffset omitted
+      final patch2 = SourcePatch.from(Patch('two', 10), sourceFile);
+      expect(patch2.startOffset, 10);
+      expect(patch2.endOffset, sourceFile.length);
+      expect(patch2.updatedText, 'two');
+    });
+
     test('compareTo() compares the sourceSpans', () {
       final span1 = sourceFile.span(0, 5);
       final span2 = sourceFile.span(10, 15);
-      final patch1 = Patch(sourceFile, span1, '');
-      final patch2 = Patch(sourceFile, span2, '');
+      final patch1 = SourcePatch(sourceFile, span1, '');
+      final patch2 = SourcePatch(sourceFile, span2, '');
       expect(patch1.compareTo(patch2), lessThan(0));
       expect(patch2.compareTo(patch1), greaterThan(0));
       expect(patch1.compareTo(patch1), 0);
@@ -53,44 +66,44 @@ void main() {
 
     test('isNoop is true if the updated text is the same as original', () {
       final span = sourceFile.span(5, 10);
-      final patch = Patch(sourceFile, span, span.text);
+      final patch = SourcePatch(sourceFile, span, span.text);
       expect(patch.isNoop, isTrue);
     });
 
     test('isNoop is false if the updated text is different than original', () {
       final span = sourceFile.span(5, 10);
-      final patch = Patch(sourceFile, span, 'different');
+      final patch = SourcePatch(sourceFile, span, 'different');
       expect(patch.isNoop, isFalse);
     });
 
     test('startLine is the line for the start of the sourceSpan', () {
       final span = sourceFile.span(10, 15);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.startLine, 1);
     });
 
     test('startLineOffset is the offset for startLine', () {
       final span = sourceFile.span(10, 15);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.startLineOffset, 'line 1;\n'.length);
     });
 
     test('startOffset is the offset of the start of the sourceSpan', () {
       final span = sourceFile.span(10, 15);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.startOffset, 10);
     });
 
     test('endLine is the line after the line for the end of the sourceSpan',
         () {
       final span = sourceFile.span(10, 15);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.endLine, 2);
     });
 
     test('endLineOffset is one less than the offset for the endLine', () {
       final span = sourceFile.span(10, 15);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.endLineOffset, 'line 1;\nline 2;'.length);
     });
 
@@ -98,13 +111,13 @@ void main() {
         'endLineOffset is null if the sourceSpan reaches the end of the sourceFile',
         () {
       final span = sourceFile.span(10);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.endLineOffset, isNull);
     });
 
     test('endOffset is the offset of the end of the sourceSpan', () {
       final span = sourceFile.span(10, 15);
-      final patch = Patch(sourceFile, span, '');
+      final patch = SourcePatch(sourceFile, span, '');
       expect(patch.endOffset, 15);
     });
 
@@ -112,7 +125,7 @@ void main() {
       testWithAnsi('represents an insertion', () {
         // li><ne 2;
         final span = sourceFile.span(10, 10);
-        final patch = Patch(sourceFile, span, 'ADDED');
+        final patch = SourcePatch(sourceFile, span, 'ADDED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'line 2;',
@@ -124,7 +137,7 @@ void main() {
       testWithAnsi('represents a multi-line insertion', () {
         // li><ne 2;
         final span = sourceFile.span(10, 10);
-        final patch = Patch(sourceFile, span, 'ADDED1\nADDED2');
+        final patch = SourcePatch(sourceFile, span, 'ADDED1\nADDED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'line 2;',
@@ -137,7 +150,7 @@ void main() {
       testWithAnsi('represents a replacement', () {
         // li>ne< 2;
         final span = sourceFile.span(10, 12);
-        final patch = Patch(sourceFile, span, 'REPLACED');
+        final patch = SourcePatch(sourceFile, span, 'REPLACED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'li' + red.wrap('ne') + ' 2;',
@@ -151,7 +164,7 @@ void main() {
         // li>ne 2;
         // l<ine 3;
         final span = sourceFile.span(10, 17);
-        final patch = Patch(sourceFile, span, 'REPLACED');
+        final patch = SourcePatch(sourceFile, span, 'REPLACED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'li' + red.wrap('ne 2;'),
@@ -166,7 +179,7 @@ void main() {
         // li>ne 2;
         // l<ine 3;
         final span = sourceFile.span(10, 17);
-        final patch = Patch(sourceFile, span, 'REPLACED1\nREPLACED2');
+        final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'li' + red.wrap('ne 2;'),
@@ -180,7 +193,7 @@ void main() {
       testWithAnsi('represents a multi-line replacement across one line', () {
         // li>ne< 2;
         final span = sourceFile.span(10, 12);
-        final patch = Patch(sourceFile, span, 'REPLACED1\nREPLACED2');
+        final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'li' + red.wrap('ne') + ' 2;',
@@ -193,7 +206,7 @@ void main() {
       testWithAnsi('represents a deletion', () {
         // li>ne< 2;
         final span = sourceFile.span(10, 12);
-        final patch = Patch(sourceFile, span, '');
+        final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'li' + red.wrap('ne') + ' 2;',
@@ -205,7 +218,7 @@ void main() {
         // li>ne 2;
         // l<ine 3;
         final span = sourceFile.span(10, 17);
-        final patch = Patch(sourceFile, span, '');
+        final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
           mns + 'li' + red.wrap('ne 2;'),
@@ -222,7 +235,7 @@ void main() {
         // line 5;
         // line 6;
         final span = sourceFile.span(18, 25);
-        final patch = Patch(sourceFile, span, 'R1\nR2');
+        final patch = SourcePatch(sourceFile, span, 'R1\nR2');
         final diffLines = patch.renderDiff(12).split('\n');
         expect(diffLines, [
           '~',
@@ -246,7 +259,7 @@ void main() {
       test('with a single-line patch', () {
         // li>ne 2<;
         final span = sourceFile.span(10, 14);
-        final patch = Patch(sourceFile, span, '');
+        final patch = SourcePatch(sourceFile, span, '');
         expect(patch.renderRange(), 'lib/foo.dart:2');
       });
 
@@ -254,7 +267,7 @@ void main() {
         // li>ne 2;
         // lin<e 3;
         final span = sourceFile.span(10, 19);
-        final patch = Patch(sourceFile, span, '');
+        final patch = SourcePatch(sourceFile, span, '');
         expect(patch.renderRange(), 'lib/foo.dart:2-3');
       });
     });
@@ -264,15 +277,16 @@ void main() {
         // li>ne 2;
         // lin<e 3;
         final span = sourceFile.span(10, 19);
-        final patch = Patch(sourceFile, span, '');
-        expect(patch.toString(), '<Patch: on lib/foo.dart from 2:3 to 3:4>');
+        final patch = SourcePatch(sourceFile, span, '');
+        expect(
+            patch.toString(), '<SourcePatch: on lib/foo.dart from 2:3 to 3:4>');
       });
 
       test('substitutes <unknown> if source file URL is missing', () {
         final sourceFile = SourceFile.fromString(' ');
         final span = sourceFile.span(0);
-        final patch = Patch(sourceFile, span, '');
-        expect(patch.toString(), startsWith('<Patch: on <unknown>'));
+        final patch = SourcePatch(sourceFile, span, '');
+        expect(patch.toString(), startsWith('<SourcePatch: on <unknown>'));
       });
     });
   });

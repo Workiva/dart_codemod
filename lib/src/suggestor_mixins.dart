@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:codemod/src/file_context.dart';
@@ -42,37 +44,25 @@ import 'suggestor.dart';
 ///         }
 ///       }
 ///     }
-mixin AstVisitingSuggestor<R> on AstVisitor<R> implements Suggestor {
-  final _patches = <Patch>{};
+mixin AstVisitingSuggestor<R> on AstVisitor<R> {
+  final patches = <Patch>{};
 
-  /// The context helper for the file for which patches are currently being
-  /// generated.
-  FileContext get context => _context;
-  FileContext _context;
+  bool shouldResolveAst(FileContext context) => false;
 
-  @override
-  Stream<Patch> generatePatches(FileContext context) async* {
-    _patches.clear();
-    _context = context;
-
+  Stream<Patch> call(FileContext context) async* {
     final unit = shouldResolveAst(context)
         ? (await context.getResolvedUnit()).unit
         : context.getUnresolvedUnit();
+    patches.clear();
     unit.accept(this);
-    yield* Stream.fromIterable(_patches);
+    // Call toList() here to force the copying of the list, otherwise it would
+    // be a lazy iterable mapped to the field on this class that will change on
+    // next usage.
+    yield* Stream.fromIterable(patches.toList());
   }
 
-  /// Whether the AST should be resolved for the file represented by [context].
-  ///
-  /// Note that resolving the AST is much slower.
-  bool shouldResolveAst(FileContext context) => false;
-
   void yieldPatch(String updatedText, int startOffset, [int endOffset]) {
-    if (context == null) {
-      throw StateError('yieldPatch() called outside of a visiting context. '
-          'Ensure that it is only called inside an AstVisitor method.');
-    }
-    _patches.add(context.patch(updatedText, startOffset, endOffset));
+    patches.add(Patch(updatedText, startOffset, endOffset));
   }
 }
 
@@ -87,28 +77,25 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> implements Suggestor {
 /// Note that this mixin provides an implementation of [generatePatches] that
 /// should not need to be overridden except for performance optimization reasons
 /// like avoiding analysis on certain files.
-mixin ElementVisitingSuggestor<R> on ElementVisitor<R> implements Suggestor {
-  final _patches = <Patch>{};
+mixin ElementVisitingSuggestor<R> on ElementVisitor<R> {
+  final patches = <Patch>[];
 
   /// The context helper for the file for which patches are currently being
   /// generated.
   FileContext get context => _context;
   FileContext _context;
 
-  @override
-  Stream<Patch> generatePatches(FileContext context) async* {
-    _patches.clear();
-    _context = context;
+  Stream<Patch> suggestor(FileContext context) async* {
     final resolvedLibrary = await context.getResolvedLibrary();
+    patches.clear();
     resolvedLibrary.element.accept(this);
-    yield* Stream.fromIterable(_patches);
+    // Call toList() here to force the copying of the list, otherwise it would
+    // be a lazy iterable mapped to the field on this class that will change on
+    // next usage.
+    yield* Stream.fromIterable(patches.toList());
   }
 
   void yieldPatch(String updatedText, int startOffset, [int endOffset]) {
-    if (context == null) {
-      throw StateError('yieldPatch() called outside of a visiting context. '
-          'Ensure that it is only called inside an AST visitor method.');
-    }
-    _patches.add(context.patch(updatedText, startOffset, endOffset));
+    patches.add(Patch(updatedText, startOffset, endOffset));
   }
 }

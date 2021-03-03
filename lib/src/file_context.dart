@@ -24,7 +24,7 @@ class FileContext {
   }
 
   /// A representation of this file that makes it easy to reference spans of
-  /// text, which is useful for the creation of [Patch]es.
+  /// text, which is useful for the creation of [SourcePatch]es.
   SourceFile get sourceFile =>
       _sourceFile ??= SourceFile.fromString(sourceText, url: Uri.file(path));
   SourceFile _sourceFile;
@@ -56,10 +56,4 @@ class FileContext {
   /// If the fully resolved AST is needed, use [getResolvedUnit].
   CompilationUnit getUnresolvedUnit() =>
       parseString(content: sourceText, path: path).unit;
-
-  /// Creates and returns a [Patch] for this file, where [startOffset] and
-  /// [endOffset] (or end of file, by default) define the span range and
-  /// [updatedText] is the text to write over that span.
-  Patch patch(String updatedText, int startOffset, [int endOffset]) =>
-      Patch(sourceFile, sourceFile.span(startOffset, endOffset), updatedText);
 }

@@ -39,8 +39,7 @@ Future<FileContext> fileContextForTest(String name, String sourceText) async {
 void expectSuggestorGeneratesPatches(
     Suggestor suggestor, FileContext context, dynamic resultMatcher) {
   expect(
-      suggestor
-          .generatePatches(context)
+      suggestor(context)
           .toList()
           .then((patches) => applyPatches(context.sourceFile, patches)),
       completion(resultMatcher));
