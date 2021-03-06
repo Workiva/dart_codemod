@@ -15,7 +15,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
-import 'package:codemod/src/suggestor_mixins.dart';
 import 'package:codemod/test.dart';
 import 'package:test/test.dart';
 

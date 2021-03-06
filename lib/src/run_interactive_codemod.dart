@@ -220,7 +220,7 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
 
   for (final suggestor in suggestors) {
     for (final context in fileContexts) {
-      logger.fine('file: ${context.path}');
+      logger.fine('file: ${context.relativePath}');
       final appliedPatches = <Patch>[];
       try {
         final patches = await suggestor(context)

@@ -14,10 +14,20 @@ import 'patch.dart';
 class FileContext {
   final AnalysisContextCollection _analysisContextCollection;
 
-  /// This file's path.
+  /// This file's absolute path.
   final String path;
 
-  FileContext(this.path, this._analysisContextCollection) {
+  /// This file's path relative to [root].
+  final String relativePath;
+
+  /// The path to the working directory from which this file was discovered.
+  ///
+  /// Defaults to current working directory.
+  final String root;
+
+  FileContext(this.path, this._analysisContextCollection, {String root})
+      : root = root ?? p.current,
+        relativePath = p.relative(path, from: root) {
     if (!p.isAbsolute(path)) {
       throw ArgumentError.value(path, 'path', 'must be absolute.');
     }

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 @TestOn('vm')
-library codemod.test.ast_visiting_suggestor_mixin_test;
+library codemod.test.ast_visiting_suggestor_test;
 
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';

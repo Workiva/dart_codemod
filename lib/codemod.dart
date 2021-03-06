@@ -13,6 +13,7 @@
 // limitations under the License.
 
 export 'src/aggregate_suggestors.dart' show aggregateSuggestors;
+export 'src/ast_visiting_suggestor.dart' show AstVisitingSuggestor;
 export 'src/file_context.dart' show FileContext;
 export 'src/file_query_util.dart'
     show
@@ -25,5 +26,3 @@ export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;
 export 'src/suggestor.dart' show Suggestor;
-export 'src/suggestor_mixins.dart'
-    show AstVisitingSuggestor, ElementVisitingSuggestor;

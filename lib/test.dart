@@ -20,10 +20,22 @@ export 'src/util.dart' show applyPatches;
 ///       expect(patches, ...);
 ///     });
 Future<FileContext> fileContextForTest(String name, String sourceText) async {
-  await d.file(name, sourceText).create();
+  // Use test_descriptor to create the file in a temporary directory
+  d.Descriptor descriptor;
+  final segments = p.split(name);
+  // Last segment should be the file
+  descriptor = d.file(segments.last, sourceText);
+  // Any preceding segments (if any) are directories
+  for (final dir in segments.reversed.skip(1)) {
+    descriptor = d.dir(dir, [descriptor]);
+  }
+  await descriptor.create();
+
+  // Setup analysis for this file
   final path = p.canonicalize(p.join(d.sandbox, name));
   final collection = AnalysisContextCollection(includedPaths: [path]);
-  return FileContext(path, collection);
+
+  return FileContext(path, collection, root: d.sandbox);
 }
 
 /// Uses [suggestor] to generate a stream of patches for [context] and returns

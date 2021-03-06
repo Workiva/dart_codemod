@@ -13,11 +13,11 @@
 // limitations under the License.
 
 import 'aggregate_suggestors.dart';
+import 'ast_visiting_suggestor.dart';
 import 'file_context.dart';
 import 'patch.dart';
 import 'run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;
-import 'suggestor_mixins.dart';
 
 /// Function signature representing the core driver of a "codemod" (code
 /// modification).
@@ -64,7 +64,7 @@ import 'suggestor_mixins.dart';
 /// If, however, your aim is to modify Dart code, using the analyzer's visitor
 /// pattern to traverse the AST or elements is a much more robust option and
 /// allows for the creation of very powerful codemods with relatively little
-/// effort. See [AstVisitingSuggestor] and [ElementVisitingSuggestor].
+/// effort. See [AstVisitingSuggestor].
 ///
 /// Finally, it's recommended that you keep your suggestors simple. Rather than
 /// writing a single suggestor that performs several modifications that aren't

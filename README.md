@@ -169,14 +169,11 @@ class ExampleSuggestor extends GeneralizingAstVisitor
 }
 ```
 
-Similarly, there is an `ElementVisitingSuggestor` that works with any
-`ElementVisitor` and operates on the file's fully resolved `LibraryElement`.
-
 > If you're not familiar with the analyzer API, in particular the `AstNode`
-> class hierarchy and the `AstVisitor`/`ElementVisitor` pattern, it may be a
-> good opportunity to browse the analyzer source code or look at the AST
-> visiting suggestor codemods that are linked below in the
-> [references section](#references) to see what is possible with this approach.
+> class hierarchy and the `AstVisitor` pattern, it may be a good opportunity to
+> browse the analyzer source code or look at the AST visiting suggestor codemods
+> that are linked below in the [references section](#references) to see what is
+> possible with this approach.
 
 ## Running a Codemod
 

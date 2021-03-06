@@ -48,7 +48,7 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
 }
 
 void main() {
-  group('Examples: AnalysisRequired', () {
+  group('Examples: IsEvenOrOddSuggestor', () {
     test('changes modulus to isEven and isOdd only for an int receiver',
         () async {
       final context = await fileContextForTest('test.dart', '''
