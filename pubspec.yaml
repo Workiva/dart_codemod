@@ -23,7 +23,6 @@ dependencies:
   test_descriptor: ^1.2.0
 
 dev_dependencies:
-  dart_dev: ^3.0.0
   dart_style: ^1.2.0
   dependency_validator: ^2.0.1
   meta: ^1.1.7

@@ -1,13 +1,14 @@
 # Contributing to dart_codemod
 
-- [__Support, Opening Issues__](#support-opening-issues)
-- [__Contributing Changes__](#contributing-changes)
+- [Contributing to dart_codemod](#contributing-to-dart_codemod)
+  - [Support, Opening Issues](#support-opening-issues)
+          - [Workiva Employees](#workiva-employees)
+  - [Contributing Changes](#contributing-changes)
     - [Coding Standards](#coding-standards)
     - [Git Commit Message Standards](#git-commit-message-standards)
-- [__Code Review Process and Merging Requirements__](#code-review-process-and-merging-requirements)
-    - [Minimum Required Review](#minimum-required-review)
+  - [Code Review Process and Merging Requirements](#code-review-process-and-merging-requirements)
     - [Review Types](#review-types)
-    - [Manual Testing Criteria](#manual-testing-criteria)
+  - [Manual Testing Criteria](#manual-testing-criteria)
 
 ---
 
@@ -27,9 +28,9 @@ and fill out the description with as much detail as necessary.
 If you're contributing a change to dart_codemod, please follow this process: (and
 thank you!)
 
-1. Before you start working on a larger contribution (e.g. implementing features, 
+1. Before you start working on a larger contribution (e.g. implementing features,
     refactoring code, etc.), you should get in touch with us first so that
-    we can help out and possibly guide you. 
+    we can help out and possibly guide you.
 
     Coordinating up front makes it much easier to avoid frustration later on.
 
@@ -53,7 +54,7 @@ descriptive, well commented, and approachable by others.
 
 - Dart
     - Adhere to the official [Dart Style Guide][dart-style-guide]. _Please take the time to read it if you have never done so._
-    - Format your code using `pub run dart_dev format` (this is enforced by a CI check)
+    - Format your code using `dart format .` (this is enforced by a CI check)
 
 
 ### Git Commit Message Standards
@@ -98,26 +99,26 @@ Manual testing instructions (done as part of a "QA +1") should be included for t
 
 __If none of these apply, then manual testing instructions may be omitted.__
 
-- When manual testing can help uncover areas of missed test coverage (in terms of certain scenarios and states, not just lines covered). 
+- When manual testing can help uncover areas of missed test coverage (in terms of certain scenarios and states, not just lines covered).
 
     _Examples:_
     - Running CLIs on several different projects to help catch edge-cases.
     - Hammering on UI elements to ensure they react gracefully to different sequences of user input.
-    
-- When tests run in CI do not fully exercise the desired behavior. 
+
+- When tests run in CI do not fully exercise the desired behavior.
 
     _Examples:_
     - Changes were made in areas of the code that shouldn't be tested, like examples.
     - Changes were made in areas of the code that are very difficult to fully test, and are more efficient to test manually.
     - Changes need to be consumed in a certain library, harness, or deploy to be fully tested.
-    
-- When CI tests do not fully protect against regressions to existing behavior. 
+
+- When CI tests do not fully protect against regressions to existing behavior.
 
     _Examples:_
     - Test coverage around code impacted by changes is sparse.
     - Changes need to be integrated with another library to ensure nothing broke.
-    
-- When changes are made to CI itself, and need to be manually verified. 
+
+- When changes are made to CI itself, and need to be manually verified.
 
     _Examples:_
     - Test runner was updated.
