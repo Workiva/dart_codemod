@@ -1,7 +1,7 @@
 # codemod for Dart
 
 [![Pub](https://img.shields.io/pub/v/codemod.svg)](https://pub.dartlang.org/packages/codemod)
-[![Build Status](https://travis-ci.org/Workiva/dart_codemod.svg?branch=master)](https://travis-ci.org/Workiva/dart_codemod)
+[![Dart CI](https://github.com/Workiva/dart_codemod/workflows/Dart%20CI/badge.svg?branch=master)](https://github.com/Workiva/dart_codemod/actions?query=workflow%3A%22Dart+CI%22+branch%3Amaster)
 
 A library that makes it easy to write and run automated code modifications
 on a codebase. Primarily geared towards updating/refactoring Dart code by
@@ -363,11 +363,11 @@ var foo = 'foo';
 
 ## Contributing
 
-- **Run tests:** `pub run test`
+- **Run tests:** `dart test`
 
-- **Format code:** `pub run dart_dev format`
+- **Format code:** `dart format`
 
-- **Run static analysis:** `dartanalyzer .`
+- **Run static analysis:** `dart analyze`
 
 [analyzer]: https://pub.dartlang.org/packages/analyzer
 [facebook-codemod]: https://github.com/facebook/codemod

@@ -29,7 +29,7 @@ dependencies:
 dev_dependencies:
   dart_dev: ^3.0.0
   dart_style: ^1.2.0
-  dependency_validator: ^2.0.0
+  dependency_validator: ^2.0.1
   meta: ^1.1.7
   mockito: ^4.0.0
   pedantic: ^1.4.0
