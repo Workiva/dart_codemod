@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'aggregate_suggestors.dart';
+import 'aggregate.dart';
 import 'ast_visiting_suggestor.dart';
 import 'file_context.dart';
 import 'patch.dart';
@@ -69,6 +69,6 @@ import 'run_interactive_codemod.dart'
 /// Finally, it's recommended that you keep your suggestors simple. Rather than
 /// writing a single suggestor that performs several modifications that aren't
 /// strictly related, a better option is to write several small, focused
-/// suggestors that you then combine using [aggregateSuggestors] to be run as a
+/// suggestors that you then combine using [aggregate] to be run as a
 /// single "codemod". This makes maintenance and testing much easier.
 typedef Suggestor = Stream<Patch> Function(FileContext context);

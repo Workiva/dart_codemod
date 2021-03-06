@@ -38,7 +38,7 @@ class ShouldBeSkippedPatch extends MockPatch {}
 
 void main() {
   test('aggregate should yield patches from each suggestor', () async {
-    final suggestor = aggregateSuggestors([fooSuggestor, barSuggestor]);
+    final suggestor = aggregate([fooSuggestor, barSuggestor]);
     final context = await fileContextForTest('test.dart', 'test');
     expect(
         suggestor(context), emitsInOrder([isA<FooPatch>(), isA<BarPatch>()]));

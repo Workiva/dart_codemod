@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export 'src/aggregate_suggestors.dart' show aggregateSuggestors;
+export 'src/aggregate.dart' show aggregate;
 export 'src/ast_visiting_suggestor.dart' show AstVisitingSuggestor;
 export 'src/file_context.dart' show FileContext;
 export 'src/file_query_util.dart'

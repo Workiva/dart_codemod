@@ -254,8 +254,7 @@ to pub!
 To facilitate the creation of more complex codemods, two additional pieces are
 provided by this library:
 
-- Aggregate multiple suggestors into a single suggestor with
-  `AggregateSuggestor`:
+- Aggregate multiple suggestors into a single suggestor with `aggregate()`:
 
     ```dart
     import 'dart:io';
@@ -265,7 +264,7 @@ provided by this library:
     void main(List<String> args) async {
       exitCode = await runInteractiveCodemod(
         [...], // input files
-        AggregateSuggestor([
+        aggregate([
           suggestorA,
           suggestorB,
         ]),
