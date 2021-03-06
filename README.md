@@ -21,7 +21,7 @@ apply code modifications and refactors via an interactive CLI. To that end,
 the following function is provided:
 
 ```dart
-int runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
+Future<int> runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
 ```
 
 Calling this will tell codemod run the `suggestor` on each file in `files`. For
