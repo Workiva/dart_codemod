@@ -28,7 +28,8 @@ import 'patch.dart';
 /// Throws an [Exception] if any two of the given [patches] overlap.
 String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   final buffer = StringBuffer();
-  final sortedPatches = patches.toList()..sort();
+  final sortedPatches =
+      patches.map((p) => SourcePatch.from(p, sourceFile)).toList()..sort();
 
   var lastEdgeOffset = 0;
   Patch prev;

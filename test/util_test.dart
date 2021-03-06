@@ -37,32 +37,20 @@ line 5;''';
       // line 1;
       // <<<
       // li<INS>ne 1;
-      final insertion = Patch(
-        sourceFile,
-        sourceFile.span(2, 2),
-        '<INS>',
-      );
+      final insertion = Patch('<INS>', 2, 2);
 
       // >>>
       // line 2;
       // line 3;
       // <<<
       // l<REP>ine 3;
-      final replacement = Patch(
-        sourceFile,
-        sourceFile.span(9, 17),
-        '<REP>',
-      );
+      final replacement = Patch('<REP>', 9, 17);
 
       // >>>
       // line 4;
       // <<<
       // l4;
-      final deletion = Patch(
-        sourceFile,
-        sourceFile.span(25, 29),
-        '',
-      );
+      final deletion = Patch('', 25, 29);
 
       // >>>
       // line 4;
@@ -70,18 +58,10 @@ line 5;''';
       // <<<
       // line 4;
       //
-      final eofDeletion = Patch(
-        sourceFile,
-        sourceFile.span(sourceFile.length - 'line 5;'.length),
-        '',
-      );
+      final eofDeletion = Patch('', sourceFile.length - 'line 5;'.length);
 
       // Patch that overlaps with [replacement].
-      final overlapsReplacement = Patch(
-        sourceFile,
-        sourceFile.span(11, 12),
-        'NOPE',
-      );
+      final overlapsReplacement = Patch('NOPE', 11, 12);
 
       test('returns original source if patches is empty', () {
         expect(applyPatches(sourceFile, []), sourceContents);

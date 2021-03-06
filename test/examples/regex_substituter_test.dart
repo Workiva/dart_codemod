@@ -24,16 +24,13 @@ final RegExp pattern = RegExp(
 
 const String targetConstraint = '^1.0.0';
 
-class RegexSubstituter implements Suggestor {
-  @override
-  Stream<Patch> generatePatches(FileContext context) async* {
-    for (final match in pattern.allMatches(context.sourceText)) {
-      final line = match.group(0);
-      final constraint = match.group(1);
-      final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
+Stream<Patch> regexSubstituter(FileContext context) async* {
+  for (final match in pattern.allMatches(context.sourceText)) {
+    final line = match.group(0);
+    final constraint = match.group(1);
+    final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
 
-      yield context.patch(updated, match.start, match.end);
-    }
+    yield Patch(updated, match.start, match.end);
   }
 }
 
@@ -49,7 +46,7 @@ dependencies:
   codemod: ^1.0.0
 ''';
       expectSuggestorGeneratesPatches(
-          RegexSubstituter(), context, expectedOutput);
+          regexSubstituter, context, expectedOutput);
     });
   });
 }

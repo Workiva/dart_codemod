@@ -220,10 +220,12 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
 
   for (final suggestor in suggestors) {
     for (final context in fileContexts) {
-      logger.fine('file: ${context.path}');
+      logger.fine('file: ${context.relativePath}');
       final appliedPatches = <Patch>[];
       try {
-        final patches = await suggestor.generatePatches(context).toList();
+        final patches = await suggestor(context)
+            .map((p) => SourcePatch.from(p, context.sourceFile))
+            .toList();
         for (final patch in patches) {
           if (patch.isNoop) {
             // Patch suggested, but without any changes. This is probably an

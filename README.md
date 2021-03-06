@@ -25,19 +25,18 @@ int runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
 ```
 
 Calling this will tell codemod run the `suggestor` on each file in `files`. For
-each file, the suggestor will generate a stream of patches that should be
+each file, the suggestor will return a stream of patches that should be
 suggested to the user. As patches are suggested and accepted by the user,
 codemod handles applying them to the files and writing the result to disk.
 
 ## Writing a Suggestor
 
-This library provides `Suggestor`, but it is just an interface one method:
-
 ```dart
-abstract class Suggestor {
-  Iterable<Patch> generatePatches(FileContext context);
-}
+typedef Suggestor = Stream<Patch> Function(FileContext context);
 ```
+
+Suggestor is just a typedef, so any function with that signature or class that
+overrides `call()` with that signature will work.
 
 Codemod creates the `FileContext` instance for each file path it is given and
 passes it to the suggestor; it is just a helper class with methods for reading
@@ -63,24 +62,21 @@ final String licenseHeader = '''
 // 2018-2019
 ''';
 
-class LicenseHeaderInserter implements Suggestor {
-  @override
-  Stream<Patch> generatePatches(FileContext context) async* {
-    // Skip if license header already exists.
-    if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
+Stream<Patch> licenseHeaderInserter(FileContext context) async* {
+  // Skip if license header already exists.
+  if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
 
-    yield context.patch(
-      // Text to insert.
-      licenseHeader,
-      // Start offset.
-      // 0 means "insert at the beginning of the file."
-      0,
-      // End offset.
-      // Using the same offset as the start offset here means that the patch
-      // is being inserted at this point instead of replacing a span of text.
-      0,
-    );
-  }
+  yield Patch(
+    // Text to insert.
+    licenseHeader,
+    // Start offset.
+    // 0 means "insert at the beginning of the file."
+    0,
+    // End offset.
+    // Using the same offset as the start offset here means that the patch
+    // is being inserted at this point instead of replacing a span of text.
+    0,
+  );
 }
 ```
 
@@ -104,16 +100,13 @@ final RegExp pattern = RegExp(
 /// The version constraint that `codemod` entries should be updated to.
 const String targetConstraint = '^1.0.0';
 
-class RegexSubstituter implements Suggestor {
-  @override
-  Stream<Patch> generatePatches(FileContext context) async* {
-    for (final match in pattern.allMatches(context.sourceText)) {
-      final line = match.group(0);
-      final constraint = match.group(1);
-      final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
+Stream<Patch> regexSubstituter(FileContext context) async* {
+  for (final match in pattern.allMatches(context.sourceText)) {
+    final line = match.group(0);
+    final constraint = match.group(1);
+    final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
 
-      yield context.patch(updated, match.start, match.end);
-    }
+    yield Patch(updated, match.start, match.end);
   }
 }
 ```
@@ -132,17 +125,17 @@ Consider the following suggestor that removes all deprecated declarations
 import 'package:analyzer/analyzer.dart';
 import 'package:codemod/codemod.dart';
 
-class DeprecatedRemover extends GeneralizingAstVisitor
+class DeprecatedRemover extends GeneralizingAstVisitor<void>
     with AstVisitingSuggestor {
   static bool isDeprecated(AnnotatedNode node) =>
       node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
 
   @override
-  visitDeclaration(Declaration node) {
+  void visitDeclaration(Declaration node) {
     if (isDeprecated(node)) {
       // Remove the node by replacing the span from its start offset to its end
       // offset with an empty string.
-      yieldPatch(node.offset, node.end, '');
+      yieldPatch('', node.offset, node.end);
     }
   }
 }
@@ -176,14 +169,11 @@ class ExampleSuggestor extends GeneralizingAstVisitor
 }
 ```
 
-Similarly, there is an `ElementVisitingSuggestor` that works with any
-`ElementVisitor` and operates on the file's fully resolved `LibraryElement`.
-
 > If you're not familiar with the analyzer API, in particular the `AstNode`
-> class hierarchy and the `AstVisitor`/`ElementVisitor` pattern, it may be a
-> good opportunity to browse the analyzer source code or look at the AST
-> visiting suggestor codemods that are linked below in the
-> [references section](#references) to see what is possible with this approach.
+> class hierarchy and the `AstVisitor` pattern, it may be a good opportunity to
+> browse the analyzer source code or look at the AST visiting suggestor codemods
+> that are linked below in the [references section](#references) to see what is
+> possible with this approach.
 
 ## Running a Codemod
 
@@ -216,7 +206,7 @@ import 'package:codemod/codemod.dart';
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
     ['pubspec.yaml'],
-    RegexSubstituter(),
+    regexSubstituter,
     args: args,
   );
 }
@@ -233,7 +223,7 @@ import 'package:glob/glob.dart';
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
     filePathsFromGlob(Glob('**.dart', recursive: true)),
-    LicenseHeaderInserter(),
+    licenseHeaderInserter,
     args: args,
   );
 }
@@ -276,8 +266,8 @@ provided by this library:
       exitCode = await runInteractiveCodemod(
         [...], // input files
         AggregateSuggestor([
-          SuggestorA(),
-          SuggestorB(),
+          suggestorA,
+          suggestorB,
         ]),
       );
     }
@@ -294,8 +284,8 @@ provided by this library:
       exitCode = await runInteractiveCodemodSequence(
         [...], // input files
         [
-          PhaseOneSuggestor(),
-          PhaseTwoSuggestor(),
+          phaseOneSuggestor,
+          phaseTwoSuggestor,
         ],
         args: args,
       );
@@ -312,10 +302,11 @@ provided by this library:
 Testing suggestors is relatively easy for two reasons:
 
 - The API surface area is small (most of the time you only need to test the
-  `generatePatches()` method).
+  suggestor function).
 
-- The stream of patches returned by `generatePatches()` can be applied to obtain
-  a `String` output, which can easily be compared against an expected output.
+- The stream of patches returned by a suggestor can be applied to the source
+  file to obtain a `String` output, which can easily be compared against an
+  expected output.
 
 In other words, all you need to do is determine a sufficient set of inputs and
 their respective expected outputs.
@@ -329,8 +320,8 @@ used as the input for `Suggestor.generatePatches()`
 asserting that a suggestor produces the expected result for a given input
 
 If, however, you need to examine the generated patches more closely, you can
-call `Suggestor.generatePatches()` yourself and then use the
-`applyPatches(sourceFile, patches)` function to get the resulting output.
+call a suggestor yourself and then use the `applyPatches(sourceFile, patches)`
+function to get the resulting output.
 
 Let's use the `DeprecatedRemover` suggestor example from above to demonstrate
 testing:

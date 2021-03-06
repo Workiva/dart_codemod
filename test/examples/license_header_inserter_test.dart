@@ -22,32 +22,30 @@ final String licenseHeader = '''
 // 2018-2019
 ''';
 
-class LicenseHeaderInserter implements Suggestor {
-  @override
-  Stream<Patch> generatePatches(FileContext context) async* {
-    if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
+Stream<Patch> licenseHeaderInserter(FileContext context) async* {
+  // Skip if license header already exists.
+  if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
 
-    yield context.patch(
-      // Text to insert.
-      licenseHeader,
-      // Start offset.
-      // 0 means "insert at the beginning of the file."
-      0,
-      // End offset.
-      // Using the same offset as the start offset here means that the patch
-      // is being inserted at this point instead of replacing a span of text.
-      0,
-    );
-  }
+  yield Patch(
+    // Text to insert.
+    licenseHeader,
+    // Start offset.
+    // 0 means "insert at the beginning of the file."
+    0,
+    // End offset.
+    // Using the same offset as the start offset here means that the patch
+    // is being inserted at this point instead of replacing a span of text.
+    0,
+  );
 }
 
 void main() {
-  group('Examples: LicenseHeaderInserter', () {
+  group('Examples: licenseHeaderInserter', () {
     test('inserts missing header', () async {
       final context = await fileContextForTest('foo.dart', 'library foo;');
       final expectedOutput = '${licenseHeader}library foo;';
       expectSuggestorGeneratesPatches(
-          LicenseHeaderInserter(), context, expectedOutput);
+          licenseHeaderInserter, context, expectedOutput);
     });
   });
 }

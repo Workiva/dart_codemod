@@ -187,12 +187,12 @@ void main() {
           out,
           contains(
               'NOTE: Overlapping patch was skipped. May require manual modification.\n'
-              '      <Patch: on $file1Path from 1:2 to 1:4>\n'
+              '      <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
               '      Updated text:\n'
               '      overlap\n'
               '\n'
               'NOTE: Overlapping patch was skipped. May require manual modification.\n'
-              '      <Patch: on $file2Path from 1:2 to 1:4>\n'
+              '      <SourcePatch: on $file2Path from 1:2 to 1:4>\n'
               '      Updated text:\n'
               '      overlap\n'
               '\n'));
@@ -208,10 +208,10 @@ void main() {
           err,
           contains('Exception: Codemod terminated due to overlapping patch.\n'
               'Previous patch:\n'
-              '  <Patch: on $file1Path from 1:1 to 1:4>\n'
+              '  <SourcePatch: on $file1Path from 1:1 to 1:4>\n'
               '  Updated text: dov\n'
               'Overlapping patch:\n'
-              '  <Patch: on $file1Path from 1:2 to 1:4>\n'
+              '  <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
               '  Updated text: overlap\n'));
     });
   });

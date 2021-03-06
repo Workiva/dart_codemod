@@ -36,7 +36,7 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
 
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
-    filePathsFromGlob(Glob('codemod_analysis_required_fixtures/**.dart')),
+    filePathsFromGlob(Glob('is_even_or_odd_suggestor_fixtures/**.dart')),
     IsEvenOrOddSuggestor(),
     args: args,
   );
