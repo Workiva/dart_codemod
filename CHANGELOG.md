@@ -88,6 +88,8 @@ entrypoint exports three functions:
 
     The first two should be sufficient for testing most suggestors.
 
+- Use GitHub Actions for CI (remove Travis CI).
+
 ## [0.2.0](https://github.com/Workiva/dart_codemod/compare/0.1.5...0.2.0)
 
 - **Breaking Change:** remove the `FileQuery` class. The
