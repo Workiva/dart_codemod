@@ -14,7 +14,7 @@
 
 @TestOn('vm')
 import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
 
 final String licenseHeader = '''
@@ -22,44 +22,30 @@ final String licenseHeader = '''
 // 2018-2019
 ''';
 
-class LicenseHeaderInserter implements Suggestor {
-  @override
-  bool shouldSkip(String sourceFileContents) =>
-      sourceFileContents.trimLeft().startsWith(licenseHeader);
+Stream<Patch> licenseHeaderInserter(FileContext context) async* {
+  // Skip if license header already exists.
+  if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
 
-  @override
-  Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
-    yield Patch(
-      sourceFile,
-      // The span across which the patch should be applied.
-      sourceFile.span(
-        // Start offset.
-        // 0 means "insert at the beginning of the file."
-        0,
-        // End offset.
-        // Using the same offset as the start offset here means that the patch
-        // is being inserted at this point instead of replacing a span of text.
-        0,
-      ),
-      // Text to insert.
-      licenseHeader,
-    );
-  }
+  yield Patch(
+    // Text to insert.
+    licenseHeader,
+    // Start offset.
+    // 0 means "insert at the beginning of the file."
+    0,
+    // End offset.
+    // Using the same offset as the start offset here means that the patch
+    // is being inserted at this point instead of replacing a span of text.
+    0,
+  );
 }
 
 void main() {
-  group('Examples: LicenseHeaderInserter', () {
-    test('inserts missing header', () {
-      final sourceFile = SourceFile.fromString('library foo;');
-      final expectedOutput = '${licenseHeader}library foo;' '';
-      final patches = LicenseHeaderInserter().generatePatches(sourceFile);
-      expect(patches, hasLength(1));
-      expect(applyPatches(sourceFile, patches), expectedOutput);
-    });
-
-    test('should skip if header is already present', () {
-      expect(LicenseHeaderInserter().shouldSkip('${licenseHeader}library foo;'),
-          isTrue);
+  group('Examples: licenseHeaderInserter', () {
+    test('inserts missing header', () async {
+      final context = await fileContextForTest('foo.dart', 'library foo;');
+      final expectedOutput = '${licenseHeader}library foo;';
+      expectSuggestorGeneratesPatches(
+          licenseHeaderInserter, context, expectedOutput);
     });
   });
 }

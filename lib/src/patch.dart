@@ -27,14 +27,49 @@ import 'logging.dart';
 ///
 /// A patch can represent an insertion, a deletion, or a replacement:
 ///
-/// - An insertion will have a non-empty [updatedText] value with a [sourceSpan]
-///   that is a "point" span (meaning the start and end offsets are the same).
-/// - A deletion will have an empty [updatedText] value with a [sourceSpan] that
-///   is not a "point" span. The text across this span will be deleted.
-/// - A replacement will have a non-empty [updatedText] value with a
-///   [sourceSpan] that is not a "point span". The text across this span will be
-///   replaced by [updatedText].
-class Patch implements Comparable<Patch> {
+/// - An insertion has a non-empty [updatedText] value at a "point span",
+///   meaning [startOffset] and [endOffset] are the same.
+/// - A deletion will have an empty [updatedText] value with an [endOffset] that
+///   is greater than [startOffset]. The text across this span will be deleted.
+/// - A replacement will have a non-empty [updatedText] value with an
+///   [endOffset] that is greater than [startOffset]. The text across this span
+///   will be replaced by [updatedText].
+///
+/// Also note that [endOffset] may be null, in which case it defaults to the end
+/// of the file.
+class Patch {
+  final int startOffset;
+
+  final int endOffset;
+
+  /// The value that would be written in place of the existing text across the
+  /// [sourceSpan].
+  ///
+  /// An empty value here represents a deletion, whereas a non-empty value may
+  /// represent either an insertion or a replacement.
+  final String updatedText;
+
+  Patch(this.updatedText, this.startOffset, [this.endOffset]);
+
+  @override
+  bool operator ==(other) =>
+      other is Patch &&
+      startOffset == other.startOffset &&
+      endOffset == other.endOffset &&
+      updatedText == other.updatedText;
+
+  @override
+  int get hashCode => hash3(updatedText, startOffset, endOffset);
+
+  @override
+  String toString() => '<Patch: from $startOffset to ${endOffset ?? 'EOF'}>';
+}
+
+/// A more specific implementation of [Patch] that is associated with a
+/// [sourceFile] in order to enable the application of this patch to that file.
+///
+/// This class also includes text rendering utilities for use in a CLI.
+class SourcePatch implements Patch, Comparable<SourcePatch> {
   /// The original source file upon which this patch represents a change.
   final SourceFile sourceFile;
 
@@ -46,16 +81,21 @@ class Patch implements Comparable<Patch> {
   ///
   /// An empty value here represents a deletion, whereas a non-empty value may
   /// represent either an insertion or a replacement.
+  @override
   final String updatedText;
 
-  Patch(this.sourceFile, this.sourceSpan, this.updatedText);
+  SourcePatch(this.sourceFile, this.sourceSpan, this.updatedText);
+
+  SourcePatch.from(Patch patch, SourceFile sourceFile)
+      : this(sourceFile, sourceFile.span(patch.startOffset, patch.endOffset),
+            patch.updatedText);
 
   @override
-  int compareTo(Patch other) => sourceSpan.compareTo(other.sourceSpan);
+  int compareTo(SourcePatch other) => sourceSpan.compareTo(other.sourceSpan);
 
   @override
   bool operator ==(other) =>
-      other is Patch &&
+      other is SourcePatch &&
       sourceSpan == other.sourceSpan &&
       updatedText == other.updatedText;
 
@@ -74,6 +114,7 @@ class Patch implements Comparable<Patch> {
   int get startLineOffset => sourceFile.getOffset(startLine);
 
   /// The offset for the beginning of this patch in the source file.
+  @override
   int get startOffset => sourceSpan.start.offset;
 
   /// The 0-based line of the location in the source file after the end of this
@@ -99,6 +140,7 @@ class Patch implements Comparable<Patch> {
   }
 
   /// The offset for the end of this patch in the source file.
+  @override
   int get endOffset => sourceSpan.end.offset;
 
   /// Returns a multi-line string diff representation of the change that this
@@ -194,7 +236,7 @@ class Patch implements Comparable<Patch> {
   }
 
   @override
-  String toString() => '<Patch:'
+  String toString() => '<SourcePatch:'
       ' on ${sourceFile.url?.path ?? '<unknown>'}'
       ' from ${sourceSpan.start.line + 1}:${sourceSpan.start.column + 1}'
       ' to ${sourceSpan.end.line + 1}:${sourceSpan.end.column + 1}'

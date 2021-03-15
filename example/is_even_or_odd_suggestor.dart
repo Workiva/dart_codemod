@@ -8,7 +8,10 @@ import 'package:analyzer/analyzer.dart';
 /// Removes all modulus operations on the int type and refactors them to use
 /// [int.isEven] and [int.isOdd].
 class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
-    with ResolvedAstVisitingSuggestorMixin {
+    with AstVisitingSuggestor {
+  @override
+  bool shouldResolveAst(_) => true;
+
   @override
   void visitBinaryExpression(BinaryExpression node) {
     if (node.leftOperand is BinaryExpression &&
@@ -19,10 +22,10 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
           node.operator.stringValue == '==') {
         if (left.leftOperand.staticType.isDartCoreInt) {
           if (right.value == 0) {
-            yieldPatch(left.leftOperand.end, node.end, '.isEven');
+            yieldPatch('.isEven', left.leftOperand.end, node.end);
           }
           if (right.value == 1) {
-            yieldPatch(left.leftOperand.end, node.end, '.isOdd');
+            yieldPatch('.isOdd', left.leftOperand.end, node.end);
           }
         }
       }
@@ -33,7 +36,7 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
 
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
-    filePathsFromGlob(Glob('codemod_analysis_required_fixtures/**.dart')),
+    filePathsFromGlob(Glob('is_even_or_odd_suggestor_fixtures/**.dart')),
     IsEvenOrOddSuggestor(),
     args: args,
   );

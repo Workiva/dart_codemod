@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+export 'src/aggregate.dart' show aggregate;
+export 'src/ast_visiting_suggestor.dart' show AstVisitingSuggestor;
+export 'src/file_context.dart' show FileContext;
 export 'src/file_query_util.dart'
     show
         filePathsFromGlob,
@@ -22,11 +25,4 @@ export 'src/file_query_util.dart'
 export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;
-export 'src/suggestors.dart'
-    show
-        AggregateSuggestor,
-        AstVisitingSuggestorMixin,
-        Suggestor,
-        ResolvedSuggestor,
-        ResolvedAstVisitingSuggestorMixin;
-export 'src/util.dart' show applyPatches;
+export 'src/suggestor.dart' show Suggestor;

@@ -5,14 +5,6 @@ import 'package:glob/glob.dart';
 
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
-      filePathsFromGlob(Glob('**')), NoopSuggestor(),
+      filePathsFromGlob(Glob('**')), (_) async* {},
       args: args);
-}
-
-class NoopSuggestor implements Suggestor {
-  @override
-  bool shouldSkip(_) => true;
-
-  @override
-  Iterable<Patch> generatePatches(_) => [];
 }

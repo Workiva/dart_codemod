@@ -16,13 +16,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:codemod/codemod.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart' as d;
 
 import 'package:codemod/src/run_interactive_codemod.dart' show codemodArgParser;
-
-import '../util.dart';
 
 // Change this to `true` and all of the functional tests in this file will print
 // the stdout/stderr of the codemod processes.
@@ -31,12 +30,12 @@ final _debug = false;
 const _testFixturesPath = 'test_fixtures/functional';
 const _afterAllPatches = '$_testFixturesPath/after_all_patches/';
 const _afterSomePatches = '$_testFixturesPath/after_some_patches/';
-const _afterNoPatches = '$_testFixturesPath/before/';
-const _overlappingPatchesQuit = '$_testFixturesPath/before/';
+const _afterNoPatches = '$_testFixturesPath/after_no_patches/';
 const _overlappingPatchesSkip =
     '$_testFixturesPath/after_overlapping_patches_skip/';
 const _projectPath = '$_testFixturesPath/before/';
 
+@isTest
 Future<Null> testCodemod(
   String description,
   String goldPath, {
@@ -47,73 +46,60 @@ Future<Null> testCodemod(
   List<String> stdinLines,
 }) async {
   test(description, () async {
-    Directory tempProjectDir;
-    try {
-      tempProjectDir = Directory(_testFixturesPath).createTempSync();
-      copyDirectory(Directory(_projectPath), tempProjectDir);
-      final pubGetResult = await Process.run(
-        'pub',
-        ['get'],
-        workingDirectory: tempProjectDir.path,
-      );
-      if (pubGetResult.exitCode != 0) {
-        fail('Failed to `pub get` in test fixture directory.\n'
-            'Pub get stderr:\n'
-            '${pubGetResult.stderr}');
-      }
+    final projectDir =
+        d.DirectoryDescriptor.fromFilesystem('project', _projectPath);
+    await projectDir.create();
 
-      final processArgs = [
-        script ?? 'codemod.dart',
-        ...?args,
-      ];
-      if (_debug) {
-        processArgs.add('--verbose');
-      }
-      final process = await Process.start('dart', processArgs,
-          workingDirectory: tempProjectDir.path);
-      (stdinLines ?? []).forEach(process.stdin.writeln);
-      final codemodExitCode = await process.exitCode;
-      expectedExitCode ??= 0;
+    // The test project has a path dependency on this codemod package, but we
+    // need to update it to be absolute so that it works from the temp dir.
+    final pubspec = File(d.path('project/pubspec.yaml'));
+    pubspec.writeAsStringSync(pubspec
+        .readAsStringSync()
+        .replaceAll('path: ../../../', 'path: ${p.current}'));
 
-      final codemodStdout = await process.stdout.transform(utf8.decoder).join();
-      final codemodStderr = await process.stderr.transform(utf8.decoder).join();
+    final pubGetResult = await Process.run(
+      'pub',
+      ['get'],
+      workingDirectory: projectDir.io.path,
+    );
+    if (pubGetResult.exitCode != 0) {
+      fail('Failed to `pub get` in test fixture directory.\n'
+          'Pub get stderr:\n'
+          '${pubGetResult.stderr}');
+    }
 
-      expect(codemodExitCode, expectedExitCode,
-          reason: 'Expected codemod to exit with code $expectedExitCode, but '
-              'it exited with $codemodExitCode.\n'
-              'Process stderr:\n$codemodStderr');
+    final processArgs = [
+      script ?? 'codemod.dart',
+      ...?args,
+    ];
+    if (_debug) {
+      processArgs.add('--verbose');
+    }
+    final process = await Process.start('dart', processArgs,
+        workingDirectory: projectDir.io.path);
+    (stdinLines ?? []).forEach(process.stdin.writeln);
+    final codemodExitCode = await process.exitCode;
+    expectedExitCode ??= 0;
 
-      if (_debug) {
-        print('STDOUT:\n$codemodStdout\n\nSTDERR:\n$codemodStderr');
-      }
+    final codemodStdout = await process.stdout.transform(utf8.decoder).join();
+    final codemodStderr = await process.stderr.transform(utf8.decoder).join();
 
-      expectProjectsMatch(goldPath, tempProjectDir.path);
+    expect(codemodExitCode, expectedExitCode,
+        reason: 'Expected codemod to exit with code $expectedExitCode, but '
+            'it exited with $codemodExitCode.\n'
+            'Process stderr:\n$codemodStderr');
 
-      if (body != null) {
-        body(codemodStdout, codemodStderr);
-      }
-    } finally {
-      tempProjectDir?.deleteSync(recursive: true);
+    if (_debug) {
+      print('STDOUT:\n$codemodStdout\n\nSTDERR:\n$codemodStderr');
+    }
+
+    // Expect that the modified projet matches the gold files.
+    await d.DirectoryDescriptor.fromFilesystem('project', goldPath).validate();
+
+    if (body != null) {
+      body(codemodStdout, codemodStderr);
     }
   });
-}
-
-void expectProjectsMatch(String goldPath, String testPath) {
-  final sortedFiles = Directory(goldPath)
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where(isNotHiddenFile)
-      .toList();
-  sortedFiles.sort((a, b) => a.path.compareTo(b.path));
-  for (final file in sortedFiles) {
-    final relPath = p.relative(file.path, from: goldPath);
-    final other = File(p.join(testPath, relPath));
-    expect(
-      other.readAsStringSync(),
-      file.readAsStringSync(),
-      reason: 'File contents mismatch: $relPath',
-    );
-  }
 }
 
 void main() {
@@ -195,34 +181,37 @@ void main() {
         expectedExitCode: 0,
         stdinLines: ['y', 'y', 's', 'y', 'y', 's', 'n', 'n'],
         script: 'codemod_overlapping_patches.dart', body: (out, err) {
+      final file1Path = p.canonicalize(d.path('project/file1.txt'));
+      final file2Path = p.canonicalize(d.path('project/file2.txt'));
       expect(
           out,
           contains(
               'NOTE: Overlapping patch was skipped. May require manual modification.\n'
-              '      <Patch: on file1.txt from 1:2 to 1:4>\n'
+              '      <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
               '      Updated text:\n'
               '      overlap\n'
               '\n'
               'NOTE: Overlapping patch was skipped. May require manual modification.\n'
-              '      <Patch: on file2.txt from 1:2 to 1:4>\n'
+              '      <SourcePatch: on $file2Path from 1:2 to 1:4>\n'
               '      Updated text:\n'
               '      overlap\n'
               '\n'));
     });
 
-    testCodemod('quits codemod via prompts when overlapping patches',
-        _overlappingPatchesQuit,
-        expectedExitCode: 70,
+    testCodemod(
+        'quits codemod via prompts when overlapping patches', _afterNoPatches,
+        expectedExitCode: 255,
         stdinLines: ['y', 'y', 'q'],
         script: 'codemod_overlapping_patches.dart', body: (out, err) {
+      final file1Path = p.canonicalize(d.path('project/file1.txt'));
       expect(
           err,
           contains('Exception: Codemod terminated due to overlapping patch.\n'
               'Previous patch:\n'
-              '  <Patch: on file1.txt from 1:1 to 1:4>\n'
+              '  <SourcePatch: on $file1Path from 1:1 to 1:4>\n'
               '  Updated text: dov\n'
               'Overlapping patch:\n'
-              '  <Patch: on file1.txt from 1:2 to 1:4>\n'
+              '  <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
               '  Updated text: overlap\n'));
     });
   });

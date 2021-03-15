@@ -27,7 +27,7 @@ import 'package:glob/glob.dart';
 /// Suggestor that generates deletion patches for all deprecated declarations
 /// (i.e. classes, constructors, variables, methods, etc.).
 class DeprecatedRemover extends GeneralizingAstVisitor<void>
-    with AstVisitingSuggestorMixin {
+    with AstVisitingSuggestor {
   static bool isDeprecated(AnnotatedNode node) =>
       node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
 
@@ -36,7 +36,7 @@ class DeprecatedRemover extends GeneralizingAstVisitor<void>
     if (isDeprecated(node)) {
       // Remove the node by replacing the span from its start offset to its end
       // offset with an empty string.
-      yieldPatch(node.offset, node.end, '');
+      yieldPatch('', node.offset, node.end);
     }
   }
 }

@@ -2,7 +2,7 @@ language: dart
 
 dart:
   - stable
-  - '2.3.0'
+  - '2.7.2'
   - dev
 
 # Re-use downloaded pub packages everywhere.
@@ -13,5 +13,5 @@ cache:
 script:
 - pub run dart_dev format --check
 - dartanalyzer .
-- pub run dependency_validator -i build_runner,build_test,dart_style,pedantic
+- pub run dependency_validator
 - pub run test
