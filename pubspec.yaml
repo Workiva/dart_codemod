@@ -6,29 +6,25 @@ description: >
   Write and run automated code modifications on a codebase. Primarily geared
   towards updating and refactoring Dart code, but can modify any files.
 
-authors:
-  - Workiva Client Platform Team <clientplatform@workiva.com>
-  - Evan Weible <evan.weible@workiva.com>
-
 environment:
-  sdk: '>=2.3.0 <3.0.0'
+  sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  analyzer: '>=0.37.0 <0.40.0'
+  analyzer: ">=0.37.0 <0.40.0"
   args: ^1.5.1
   glob: ^1.2.0
   io: ^0.3.3
   logging: ^0.11.3+2
-  meta: ^1.1.7
   path: ^1.6.2
   quiver: ^2.1.3
-  source_span: ^1.4.1
+  source_span: ^1.5.2
   stack_trace: ^1.9.3
+  test: ^1.5.1+1
+  test_descriptor: ^1.2.0
 
 dev_dependencies:
-  dart_dev: ^3.0.0
   dart_style: ^1.2.0
-  dependency_validator: ^1.2.3
+  dependency_validator: ^2.0.1
+  meta: ^1.1.7
   mockito: ^4.0.0
   pedantic: ^1.4.0
-  test: ^1.5.1+1

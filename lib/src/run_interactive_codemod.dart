@@ -14,15 +14,17 @@
 
 import 'dart:io';
 
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:args/args.dart';
+import 'package:codemod/codemod.dart';
 import 'package:io/ansi.dart';
 import 'package:io/io.dart';
 import 'package:logging/logging.dart';
-import 'package:source_span/source_span.dart';
+import 'package:path/path.dart' as p;
 
 import 'logging.dart';
 import 'patch.dart';
-import 'suggestors.dart';
+import 'suggestor.dart';
 import 'util.dart';
 
 /// Interactively runs a "codemod" by using `stdout` to display a diff for each
@@ -70,7 +72,7 @@ import 'util.dart';
 /// Additionally, you can retain ansi color highlighting of these logs when
 /// redirecting to a file by passing the `--stderr-assume-tty` flag:
 ///     $ dart example_codemod.dart --verbose --stderr-assume-tty 2>stderr.txt
-int runInteractiveCodemod(
+Future<int> runInteractiveCodemod(
   Iterable<String> filePaths,
   Suggestor suggestor, {
   Iterable<String> args,
@@ -104,14 +106,14 @@ int runInteractiveCodemod(
 ///       query,
 ///       AggregateSuggestor([SuggestorA(), SuggestorB()]),
 ///     );
-int runInteractiveCodemodSequence(
+Future<int> runInteractiveCodemodSequence(
   Iterable<String> filePaths,
   Iterable<Suggestor> suggestors, {
   Iterable<String> args,
   bool defaultYes = false,
   String additionalHelpOutput,
   String changesRequiredOutput,
-}) {
+}) async {
   try {
     ArgResults parsedArgs;
     try {
@@ -137,8 +139,7 @@ int runInteractiveCodemodSequence(
       }
       return ExitCode.success.code;
     }
-
-    return overrideAnsiOutput<int>(
+    return overrideAnsiOutput<Future<int>>(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
             defaultYes: defaultYes,
@@ -180,9 +181,9 @@ final codemodArgParser = ArgParser()
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
   );
 
-int _runInteractiveCodemod(Iterable<String> filePaths,
+Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
     Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool defaultYes, String changesRequiredOutput}) {
+    {bool defaultYes, String changesRequiredOutput}) async {
   final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
   final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
   final verbose = parsedArgs['verbose'] ?? false;
@@ -204,39 +205,28 @@ int _runInteractiveCodemod(Iterable<String> filePaths,
     return ExitCode.success.code;
   }
 
+  // Setup analysis for any suggestors that may need it.
+  logger.info('Setting up analysis contexts...');
+  final canonicalizedPaths =
+      filePaths.map((path) => p.canonicalize(path)).toList();
+  final collection =
+      AnalysisContextCollection(includedPaths: canonicalizedPaths);
+  final fileContexts =
+      canonicalizedPaths.map((path) => FileContext(path, collection));
+  logger.info('done');
+
   final skippedPatches = <Patch>[];
   stdout.writeln('searching...');
+
   for (final suggestor in suggestors) {
-    for (final filePath in filePaths) {
-      logger.fine('file: filePath');
-      final file = File(filePath);
-      String sourceText;
-      try {
-        sourceText = file.readAsStringSync();
-      } catch (e, stackTrace) {
-        logger.severe('Failed to read file: ${file.path}', e, stackTrace);
-        return ExitCode.noInput.code;
-      }
-
-      bool shouldSkip;
-      try {
-        shouldSkip = suggestor.shouldSkip(sourceText);
-      } catch (e, stackTrace) {
-        logger.severe(
-            'Suggestor.shouldSkip() threw unexpectedly.', e, stackTrace);
-        return ExitCode.software.code;
-      }
-      if (shouldSkip == true) {
-        logger.fine('skipped');
-        continue;
-      }
-
-      final sourceFile =
-          SourceFile.fromString(sourceText, url: Uri.file(file.path));
+    for (final context in fileContexts) {
+      logger.fine('file: ${context.relativePath}');
       final appliedPatches = <Patch>[];
-
       try {
-        for (final patch in suggestor.generatePatches(sourceFile)) {
+        final patches = await suggestor(context)
+            .map((p) => SourcePatch.from(p, context.sourceFile))
+            .toList();
+        for (final patch in patches) {
           if (patch.isNoop) {
             // Patch suggested, but without any changes. This is probably an
             // error in the suggestor implementation.
@@ -297,7 +287,7 @@ int _runInteractiveCodemod(Iterable<String> filePaths,
               logger.fine('skipping patch ${patch}');
             }
 
-            applyPatchesAndSave(sourceFile, appliedPatches);
+            applyPatchesAndSave(context.sourceFile, appliedPatches);
             logger.fine('quitting');
             return ExitCode.success.code;
           }
@@ -321,7 +311,7 @@ int _runInteractiveCodemod(Iterable<String> filePaths,
           logger.fine('skipping patch ${patch}');
         }
 
-        applyPatchesAndSave(sourceFile, appliedPatches);
+        applyPatchesAndSave(context.sourceFile, appliedPatches);
       }
     }
   }

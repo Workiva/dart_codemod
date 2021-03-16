@@ -1,3 +1,95 @@
+## [0.3.0](https://github.com/Workiva/dart_codemod/compare/0.2.0...0.3.0)
+
+- **Breaking:** `runInteractiveCodemod` and `runInteractiveCodemodSequence` are
+both now async.
+
+- **Breaking:** `Suggestor` is now a function typedef instead of a class.
+Addtionally, it takes the new `FileContext` type as its only parameter
+(previously the `generatePatches` method took a `SourceFile`) and now must
+return a `Stream<Patch>` instead of `Iterable<Patch>`.
+
+    If you were extending `Suggestor`, you can either change the class to a
+    function like so:
+
+    ```diff
+      final String licenseHeader = '...';
+
+    - class LicenseHeaderInserter implements Suggestor {
+    -   @override
+    -   bool shouldSkip(String sourceFileContents) =>
+    -       sourceFileContents.trimLeft().startsWith(licenseHeader);
+    -
+    -   @override
+    -   Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
+    -     yield Patch(sourceFile, sourceFile.span(0, 0), licenseHeader);
+    -   }
+    - }
+
+    + Stream<Patch> licenseHeaderInserter(FileContext context) async* {
+    +   // Skip if license header already exists.
+    +   if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
+    +
+    +   yield Patch(licenseHeader, 0, 0);
+    + }
+    ```
+
+    Or rename the `generatePatches()` method to `call()` so that the
+    class is callable like a function:
+
+    ```diff
+      final String licenseHeader = '...';
+
+    - class LicenseHeaderInserter implements Suggestor {
+    + class LicenseHeaderInserter {
+    -   @override
+        bool shouldSkip(String sourceFileContents) =>
+            sourceFileContents.trimLeft().startsWith(licenseHeader);
+
+    -   @override
+    -   Iterable<Patch> generatePatches(SourceFile sourceFile) sync* {
+    +   Stream<Patch> call(FileContext context) async* {
+    +     if (shouldSkip(context.sourceText)) return;
+    -     yield Patch(sourceFile, sourceFile.span(0, 0), licenseHeader);
+    +     yield Patch(licenseHeader, 0, 0);
+        }
+      }
+    ```
+
+- **Breaking:** Simplify the `Patch` class to now only encapsulate the updated
+text, start offset, and end offset.
+
+    ```diff
+    - yield Patch(sourceFile, sourceFile.span(5, 10), 'updated text');
+    + yield Patch('updated text', 5, 10);
+    ```
+
+- **Breaking:** Rename `AstVisitingSuggestorMixin` to `AstVisitingSuggestor`
+since the `Mixin` suffix was redundant.
+
+- **Breaking:** Remove `AggregateSuggestor` class in favor of an
+`aggregate(Iterable<Suggestor> suggestors)` function.
+
+- **Breaking:** Move `applyPatches` from the main `package:codemod/codemod.dart`
+entrypoint to the new `package:codemod/test.dart` entrypoint to make its
+intended usage clear.
+
+- Add a `shouldResolveAst(FileContext context)` method to
+`AstVisitingSuggestor`. Defaults to false (since resolving is slower), but can
+be overridden to true if the fully resolved AST is needed.
+
+  - Add example of such a codemod: see [example/is_even_or_odd_suggestor.dart](/example/is_even_or_odd_suggestor.dart)
+
+- Add `package:codemod/test.dart` entrypoint for testing suggestors. This
+entrypoint exports three functions:
+
+  - `Future<FileContext> fileContextForTest(String name, String contents)`
+  - `void expectSuggestorGeneratesPatches(Suggestor suggestor, FileContext context, dynamic resultMatcher)`
+  - `String applyPatches(SourceFile sourceFile, Iterable<Patch> patches)`
+
+    The first two should be sufficient for testing most suggestors.
+
+- Use GitHub Actions for CI (remove Travis CI).
+
 ## [0.2.0](https://github.com/Workiva/dart_codemod/compare/0.1.5...0.2.0)
 
 - **Breaking Change:** remove the `FileQuery` class. The
@@ -45,7 +137,7 @@ multiple `visit` methods.
 
 ## [0.1.4](https://github.com/Workiva/dart_codemod/compare/0.1.3...0.1.4)
 
-- Prompts the user to either skip overlapping patches or quit when they are found. 
+- Prompts the user to either skip overlapping patches or quit when they are found.
 
 ## [0.1.3](https://github.com/Workiva/dart_codemod/compare/0.1.2...0.1.3)
 
