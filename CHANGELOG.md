@@ -77,7 +77,7 @@ intended usage clear.
 `AstVisitingSuggestor`. Defaults to false (since resolving is slower), but can
 be overridden to true if the fully resolved AST is needed.
 
-  - Add example of such a codemod: see [example/is_even_or_odd_suggestor.dart](https://github.com/Workiva/dart_codemod/tree/master/example/codemod_analysis_required.dart)
+  - Add example of such a codemod: see [example/is_even_or_odd_suggestor.dart](/example/is_even_or_odd_suggestor.dart)
 
 - Add `package:codemod/test.dart` entrypoint for testing suggestors. This
 entrypoint exports three functions:
