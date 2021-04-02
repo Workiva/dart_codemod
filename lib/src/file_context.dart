@@ -25,7 +25,7 @@ class FileContext {
   /// Defaults to current working directory.
   final String root;
 
-  FileContext(this.path, this._analysisContextCollection, {String root})
+  FileContext(this.path, this._analysisContextCollection, {String? root})
       : root = root ?? p.current,
         relativePath = p.relative(path, from: root) {
     if (!p.isAbsolute(path)) {
@@ -37,11 +37,11 @@ class FileContext {
   /// text, which is useful for the creation of [SourcePatch]es.
   SourceFile get sourceFile =>
       _sourceFile ??= SourceFile.fromString(sourceText, url: Uri.file(path));
-  SourceFile _sourceFile;
+  SourceFile? _sourceFile;
 
   /// The contents of this file.
   String get sourceText => _contents ??= File(path).readAsStringSync();
-  String _contents;
+  String? _contents;
 
   /// Uses the analyzer to resolve and return the library result for this file,
   /// which includes the [LibraryElement].

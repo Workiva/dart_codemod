@@ -15,6 +15,7 @@
 import 'dart:io';
 
 import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 
 /// Returns file paths matched by [glob] and filtered to exclude any of the
@@ -23,7 +24,7 @@ import 'package:path/path.dart' as p;
 /// - Files in hidden directories (dirname starts with `.`)
 ///
 /// If [ignoreHiddenFiles] is false, these hidden files will be included.
-Iterable<String> filePathsFromGlob(Glob glob, {bool ignoreHiddenFiles}) {
+Iterable<String> filePathsFromGlob(Glob glob, {bool? ignoreHiddenFiles}) {
   var files = glob.listSync().whereType<File>();
   if (ignoreHiddenFiles ?? true) {
     files = files.where(isNotHiddenFile);

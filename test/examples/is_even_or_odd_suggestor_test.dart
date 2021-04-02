@@ -33,7 +33,7 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
       final right = node.rightOperand as IntegerLiteral;
       if (left.operator.stringValue == '%' &&
           node.operator.stringValue == '==') {
-        if (left.leftOperand.staticType.isDartCoreInt) {
+        if (left.leftOperand.staticType!.isDartCoreInt) {
           if (right.value == 0) {
             yieldPatch('.isEven', left.leftOperand.end, node.end);
           }

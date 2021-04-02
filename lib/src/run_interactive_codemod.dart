@@ -75,10 +75,10 @@ import 'util.dart';
 Future<int> runInteractiveCodemod(
   Iterable<String> filePaths,
   Suggestor suggestor, {
-  Iterable<String> args,
+  Iterable<String> args = const [],
   bool defaultYes = false,
-  String additionalHelpOutput,
-  String changesRequiredOutput,
+  String? additionalHelpOutput,
+  String? changesRequiredOutput,
 }) =>
     runInteractiveCodemodSequence(
       filePaths,
@@ -109,10 +109,10 @@ Future<int> runInteractiveCodemod(
 Future<int> runInteractiveCodemodSequence(
   Iterable<String> filePaths,
   Iterable<Suggestor> suggestors, {
-  Iterable<String> args,
+  Iterable<String> args = const [],
   bool defaultYes = false,
-  String additionalHelpOutput,
-  String changesRequiredOutput,
+  String? additionalHelpOutput,
+  String? changesRequiredOutput,
 }) async {
   try {
     ArgResults parsedArgs;
@@ -183,11 +183,11 @@ final codemodArgParser = ArgParser()
 
 Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
     Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool defaultYes, String changesRequiredOutput}) async {
-  final failOnChanges = parsedArgs['fail-on-changes'] ?? false;
-  final stderrAssumeTty = parsedArgs['stderr-assume-tty'] ?? false;
-  final verbose = parsedArgs['verbose'] ?? false;
-  var yesToAll = parsedArgs['yes-to-all'] ?? false;
+    {bool? defaultYes, String? changesRequiredOutput}) async {
+  final failOnChanges = (parsedArgs['fail-on-changes'] as bool?) ?? false;
+  final stderrAssumeTty = (parsedArgs['stderr-assume-tty'] as bool?) ?? false;
+  final verbose = (parsedArgs['verbose'] as bool?) ?? false;
+  var yesToAll = (parsedArgs['yes-to-all'] as bool?) ?? false;
   defaultYes ??= false;
   var numChanges = 0;
 

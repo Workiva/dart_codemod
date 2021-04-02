@@ -6,4 +6,4 @@ environment:
 dev_dependencies:
   codemod:
     path: ../../../
-  glob: ^1.2.0
+  glob: ^2.0.0

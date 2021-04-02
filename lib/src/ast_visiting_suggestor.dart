@@ -47,21 +47,29 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
   final _patches = <Patch>{};
 
   /// The context helper for the file currently being visited.
-  FileContext get context => _context;
-  FileContext _context;
+  FileContext get context {
+    if (_context != null) return _context!;
+    throw StateError('context accessed outside of a visiting context. '
+        'Ensure that your suggestor only accesses `this.context` inside an AST visitor method.');
+  }
+
+  FileContext? _context;
 
   Stream<Patch> call(FileContext context) async* {
     if (shouldSkip(context)) return;
 
     final unit = shouldResolveAst(context)
-        ? (await context.getResolvedUnit()).unit
+        ? (await context.getResolvedUnit()).unit!
         : context.getUnresolvedUnit();
+
     _patches.clear();
     _context = context;
     unit.accept(this);
     // Force the copying of this list, otherwise it would be a lazy iterable
     // mapped to the field on this class that will change on the next call.
     final patches = _patches.toList();
+    _context = null;
+
     yield* Stream.fromIterable(patches);
   }
 
@@ -76,7 +84,7 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
   /// contents if needed.
   bool shouldSkip(FileContext context) => false;
 
-  void yieldPatch(String updatedText, int startOffset, [int endOffset]) {
+  void yieldPatch(String updatedText, int startOffset, [int? endOffset]) {
     _patches.add(Patch(updatedText, startOffset, endOffset));
   }
 }
