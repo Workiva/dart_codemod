@@ -76,7 +76,7 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
     throw ArgumentError('sourceFile.url cannot be null');
   }
   final updatedContents = applyPatches(sourceFile, patches);
-  File(sourceFile.url.path).writeAsStringSync(updatedContents);
+  File.fromUri(sourceFile.url).writeAsStringSync(updatedContents);
 }
 
 /// Finds overlapping patches and prompts the user to decide how to handle them.
