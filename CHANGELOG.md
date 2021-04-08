@@ -1,3 +1,7 @@
+## [0.3.1](https://github.com/Workiva/dart_codemod/compare/0.3.0...0.3.1)
+
+- Fix invalid file path error on windows when applying patches.
+
 ## [0.3.0](https://github.com/Workiva/dart_codemod/compare/0.2.0...0.3.0)
 
 - **Breaking:** `runInteractiveCodemod` and `runInteractiveCodemodSequence` are
