@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:codemod/src/file_context.dart';
+import 'package:logging/logging.dart';
 
 import 'patch.dart';
 import 'suggestor.dart';
+
+final _log = Logger('AstVisitingSuggestor');
 
 /// Mixin that implements the [Suggestor] interface and makes it easier to write
 /// suggestors that operate as an [AstVisitor].
@@ -58,9 +61,18 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
   Stream<Patch> call(FileContext context) async* {
     if (shouldSkip(context)) return;
 
-    final unit = shouldResolveAst(context)
-        ? (await context.getResolvedUnit()).unit!
-        : context.getUnresolvedUnit();
+    CompilationUnit unit;
+    if (shouldResolveAst(context)) {
+      var result = await context.getResolvedUnit();
+      if (result == null || result.unit == null) {
+        _log.warning(
+            'Could not get resolved unit for "${context.relativePath}"');
+        return;
+      }
+      unit = result.unit!;
+    } else {
+      unit = context.getUnresolvedUnit();
+    }
 
     _patches.clear();
     _context = context;

@@ -45,21 +45,26 @@ class FileContext {
 
   /// Uses the analyzer to resolve and return the library result for this file,
   /// which includes the [LibraryElement].
-  Future<ResolvedLibraryResult> getResolvedLibrary() =>
-      _analysisContextCollection
-          .contextFor(path)
-          .currentSession
-          .getResolvedLibrary(path);
+  Future<ResolvedLibraryResult?> getResolvedLibrary() async {
+    final result = await _analysisContextCollection
+        .contextFor(path)
+        .currentSession
+        .getResolvedLibrary2(path);
+    return result is ResolvedLibraryResult ? result : null;
+  }
 
   /// Uses the analyzer to resolve and return the AST result for this file,
   /// which includes the [CompilationUnit].
   ///
   /// If the fully resolved AST is not needed, use the much faster
   /// [getUnresolvedUnit].
-  Future<ResolvedUnitResult> getResolvedUnit() => _analysisContextCollection
-      .contextFor(path)
-      .currentSession
-      .getResolvedUnit(path);
+  Future<ResolvedUnitResult?> getResolvedUnit() async {
+    final result = await _analysisContextCollection
+        .contextFor(path)
+        .currentSession
+        .getResolvedUnit2(path);
+    return result is ResolvedUnitResult ? result : null;
+  }
 
   /// Returns the unresolved AST for this file.
   ///
