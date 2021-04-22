@@ -7,9 +7,9 @@ void main(List<String> args) async {
 }
 
 Future<void> run(List<String> args,
-    {bool defaultYes,
-    String additionalHelpOutput,
-    String changesRequiredOutput}) async {
+    {bool defaultYes = false,
+    String? additionalHelpOutput,
+    String? changesRequiredOutput}) async {
   exitCode = await runInteractiveCodemod(
     ['file1.txt', 'file2.txt', 'skip.txt'],
     testSuggestor,
