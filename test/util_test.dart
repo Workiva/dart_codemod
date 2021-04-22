@@ -104,7 +104,7 @@ line 2;
 line 3;
 line 4;
 ''');
-      }, skip: 'https://github.com/dart-lang/source_span/pull/28');
+      });
 
       test('applies multiple patches', () {
         expect(applyPatches(sourceFile, [insertion, replacement, deletion]), '''
