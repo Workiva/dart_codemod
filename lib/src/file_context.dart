@@ -35,13 +35,11 @@ class FileContext {
 
   /// A representation of this file that makes it easy to reference spans of
   /// text, which is useful for the creation of [SourcePatch]es.
-  SourceFile get sourceFile =>
-      _sourceFile ??= SourceFile.fromString(sourceText, url: Uri.file(path));
-  SourceFile? _sourceFile;
+  late final SourceFile sourceFile =
+      SourceFile.fromString(sourceText, url: Uri.file(path));
 
   /// The contents of this file.
-  String get sourceText => _contents ??= File(path).readAsStringSync();
-  String? _contents;
+  late final String sourceText = File(path).readAsStringSync();
 
   /// Uses the analyzer to resolve and return the library result for this file,
   /// which includes the [LibraryElement].
