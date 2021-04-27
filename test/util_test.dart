@@ -15,6 +15,7 @@
 @TestOn('vm')
 import 'dart:io';
 
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
@@ -22,6 +23,9 @@ import 'package:test/test.dart';
 import 'package:codemod/src/patch.dart';
 import 'package:codemod/src/util.dart';
 
+import 'util_test.mocks.dart';
+
+@GenerateMocks([Stdout])
 void main() {
   group('Utils', () {
     group('applyPatches()', () {
@@ -100,7 +104,7 @@ line 2;
 line 3;
 line 4;
 ''');
-      }, skip: 'https://github.com/dart-lang/source_span/pull/28');
+      });
 
       test('applies multiple patches', () {
         expect(applyPatches(sourceFile, [insertion, replacement, deletion]), '''
@@ -148,5 +152,3 @@ line 5;''');
     });
   });
 }
-
-class MockStdout extends Mock implements Stdout {}

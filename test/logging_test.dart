@@ -27,7 +27,7 @@ const otherLoggerName = 'other';
 
 void main() {
   group('logListener()', () {
-    StringBuffer output;
+    late StringBuffer output;
 
     setUp(() {
       output = StringBuffer();

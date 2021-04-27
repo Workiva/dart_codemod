@@ -40,7 +40,7 @@ import 'logging.dart';
 class Patch {
   final int startOffset;
 
-  final int endOffset;
+  final int? endOffset;
 
   /// The value that would be written in place of the existing text across the
   /// [sourceSpan].
@@ -130,7 +130,7 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
   ///
   /// If this patch extends to the very end of the source file, then this will
   /// be null rather than returning an offset that would be out-of-range.
-  int get endLineOffset {
+  int? get endLineOffset {
     if (endLine >= sourceFile.lines) {
       // When passed to SourceFile.span(), null as the end offset implies the
       // end of the file, which is what we want here.
@@ -199,14 +199,14 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
 
     void writeDiffLines(List<String> lines, String linePrefix, AnsiCode color) {
       for (var i = 0; i < lines.length; i++) {
-        var line = color.wrap(lines[i]);
+        var line = color.wrap(lines[i])!;
         if (i == 0) {
           line = patchPreContext + line;
         }
         if (i == lines.length - 1) {
           line = line + patchPostContext;
         }
-        buffer.writeln(color.wrap(linePrefix) + line);
+        buffer.writeln(color.wrap(linePrefix)! + line);
       }
     }
 

@@ -39,11 +39,11 @@ const _projectPath = '$_testFixturesPath/before/';
 Future<Null> testCodemod(
   String description,
   String goldPath, {
-  List<String> args,
-  void Function(String out, String err) body,
-  int expectedExitCode,
-  String script,
-  List<String> stdinLines,
+  List<String>? args,
+  void Function(String out, String err)? body,
+  int? expectedExitCode,
+  String? script,
+  List<String>? stdinLines,
 }) async {
   test(description, () async {
     final projectDir =

@@ -26,8 +26,8 @@ const String targetConstraint = '^1.0.0';
 
 Stream<Patch> regexSubstituter(FileContext context) async* {
   for (final match in pattern.allMatches(context.sourceText)) {
-    final line = match.group(0);
-    final constraint = match.group(1);
+    final line = match.group(0)!;
+    final constraint = match.group(1)!;
     final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
 
     yield Patch(updated, match.start, match.end);

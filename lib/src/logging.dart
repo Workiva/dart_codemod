@@ -32,14 +32,14 @@ final Logger logger = Logger('codemod');
 /// messages including stack traces, logger name, and extra newlines.
 Function(LogRecord) logListener(
   StringSink sink, {
-  bool ansiOutputEnabled,
-  bool verbose,
+  bool? ansiOutputEnabled,
+  bool? verbose,
 }) =>
     (record) => overrideAnsiOutput(ansiOutputEnabled == true, () {
           _logListener(record, sink, verbose: verbose ?? false);
         });
 
-void _logListener(LogRecord record, StringSink sink, {bool verbose}) {
+void _logListener(LogRecord record, StringSink sink, {required bool verbose}) {
   AnsiCode color;
   if (record.level < Level.WARNING) {
     color = cyan;
@@ -57,16 +57,19 @@ void _logListener(LogRecord record, StringSink sink, {bool verbose}) {
     headerMessage = headerMessage.substring(blankLineCount);
   }
   final header = '$level ${_loggerName(record, verbose)}$headerMessage';
-  final lines = blankLineCount > 0
-      ? (List<Object>.generate(blankLineCount, (_) => '')..add(header))
-      : <Object>[header];
+  final lines = <Object>[
+    ...List.generate(blankLineCount, (index) => ''),
+    header,
+  ];
 
-  if (record.error != null) {
-    lines.add(record.error);
+  final error = record.error;
+  if (error != null) {
+    lines.add(error);
   }
 
-  if (record.stackTrace != null && verbose) {
-    lines.add(Trace.from(record.stackTrace).terse);
+  final stack = record.stackTrace;
+  if (stack != null && verbose) {
+    lines.add(Trace.from(stack).terse);
   }
 
   sink.writeln(lines.join('\n'));

@@ -31,22 +31,3 @@ jobs:
         run: dart analyze
       - name: Run tests
         run: dart test
-
-  test_old_sdks:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        sdk: [2.7.2]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: ${{ matrix.sdk }}
-      - name: Install dependencies
-        run: pub get
-      - name: Validate dependencies
-        run: pub run dependency_validator
-      - name: Analyze project source
-        run: dartanalyzer .
-      - name: Run tests
-        run: pub run test

@@ -25,7 +25,7 @@ class FileContext {
   /// Defaults to current working directory.
   final String root;
 
-  FileContext(this.path, this._analysisContextCollection, {String root})
+  FileContext(this.path, this._analysisContextCollection, {String? root})
       : root = root ?? p.current,
         relativePath = p.relative(path, from: root) {
     if (!p.isAbsolute(path)) {
@@ -35,31 +35,34 @@ class FileContext {
 
   /// A representation of this file that makes it easy to reference spans of
   /// text, which is useful for the creation of [SourcePatch]es.
-  SourceFile get sourceFile =>
-      _sourceFile ??= SourceFile.fromString(sourceText, url: Uri.file(path));
-  SourceFile _sourceFile;
+  late final SourceFile sourceFile =
+      SourceFile.fromString(sourceText, url: Uri.file(path));
 
   /// The contents of this file.
-  String get sourceText => _contents ??= File(path).readAsStringSync();
-  String _contents;
+  late final String sourceText = File(path).readAsStringSync();
 
   /// Uses the analyzer to resolve and return the library result for this file,
   /// which includes the [LibraryElement].
-  Future<ResolvedLibraryResult> getResolvedLibrary() =>
-      _analysisContextCollection
-          .contextFor(path)
-          .currentSession
-          .getResolvedLibrary(path);
+  Future<ResolvedLibraryResult?> getResolvedLibrary() async {
+    final result = await _analysisContextCollection
+        .contextFor(path)
+        .currentSession
+        .getResolvedLibrary2(path);
+    return result is ResolvedLibraryResult ? result : null;
+  }
 
   /// Uses the analyzer to resolve and return the AST result for this file,
   /// which includes the [CompilationUnit].
   ///
   /// If the fully resolved AST is not needed, use the much faster
   /// [getUnresolvedUnit].
-  Future<ResolvedUnitResult> getResolvedUnit() => _analysisContextCollection
-      .contextFor(path)
-      .currentSession
-      .getResolvedUnit(path);
+  Future<ResolvedUnitResult?> getResolvedUnit() async {
+    final result = await _analysisContextCollection
+        .contextFor(path)
+        .currentSession
+        .getResolvedUnit2(path);
+    return result is ResolvedUnitResult ? result : null;
+  }
 
   /// Returns the unresolved AST for this file.
   ///

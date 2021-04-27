@@ -1,3 +1,9 @@
+## [1.0.0](https://github.com/Workiva/dart_codemod/compare/0.3.0...1.0.0)
+
+- Null-safety release.
+- `AstVisitingSuggestor.context` will throw a `StateError` if accessed outside
+one of the visitor methods.
+
 ## [0.3.1](https://github.com/Workiva/dart_codemod/compare/0.3.0...0.3.1)
 
 - Fix invalid file path error on windows when applying patches.

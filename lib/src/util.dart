@@ -32,7 +32,7 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
       patches.map((p) => SourcePatch.from(p, sourceFile)).toList()..sort();
 
   var lastEdgeOffset = 0;
-  Patch prev;
+  late Patch prev;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
       throw Exception('Codemod terminated due to overlapping patch.\n'
@@ -54,11 +54,7 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
     prev = patch;
   }
 
-  final lastUnmodifiedText = sourceFile.getText(lastEdgeOffset);
-  if (lastUnmodifiedText != null) {
-    buffer.write(lastUnmodifiedText);
-  }
-
+  buffer.write(sourceFile.getText(lastEdgeOffset));
   return buffer.toString();
 }
 
@@ -76,7 +72,7 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
     throw ArgumentError('sourceFile.url cannot be null');
   }
   final updatedContents = applyPatches(sourceFile, patches);
-  File.fromUri(sourceFile.url).writeAsStringSync(updatedContents);
+  File.fromUri(sourceFile.url!).writeAsStringSync(updatedContents);
 }
 
 /// Finds overlapping patches and prompts the user to decide how to handle them.
@@ -87,10 +83,14 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
   final skippedPatches = <Patch>[];
   final sortedPatches = patches.toList()..sort();
 
-  var lastEdgeOffset = 0;
-  Patch prev;
+  int? lastEdgeOffset = 0;
+  late Patch prev;
   for (final patch in sortedPatches) {
-    if (patch.startOffset < lastEdgeOffset) {
+    // If lastEdgeOffset is null, then the previous patch had no end offset,
+    // which means it implicitly extends to the end of file. In that case, any
+    // subsequent patch will overlap. Otherwise we just check if the next patch
+    // starts before the previous one ended.
+    if (lastEdgeOffset == null || patch.startOffset < lastEdgeOffset) {
       stdout.writeln(
           'A patch that overlaps with a previous patch applied was found. '
           'Do you want to skip this patch, or quit the codemod?\n'
@@ -141,10 +141,10 @@ int calculateDiffSize(Stdout stdout) {
 ///
 /// [defaultChoice] will be returned if non-null and the user returns without
 /// entering anything.
-String prompt([String letters = 'yn', String defaultChoice]) {
+String prompt([String letters = 'yn', String? defaultChoice]) {
   while (true) {
     final response = stdin.readLineSync();
-    if (response.length > 1) {
+    if (response == null || response.length > 1) {
       stdout.writeln('Come again? (only enter a single character)');
       continue;
     }

@@ -1,9 +1,9 @@
 import 'dart:io';
 
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
 import 'package:glob/glob.dart';
-// ignore: deprecated_member_use
-import 'package:analyzer/analyzer.dart';
 
 /// Removes all modulus operations on the int type and refactors them to use
 /// [int.isEven] and [int.isOdd].
@@ -20,7 +20,7 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
       final right = node.rightOperand as IntegerLiteral;
       if (left.operator.stringValue == '%' &&
           node.operator.stringValue == '==') {
-        if (left.leftOperand.staticType.isDartCoreInt) {
+        if (left.leftOperand.staticType!.isDartCoreInt) {
           if (right.value == 0) {
             yieldPatch('.isEven', left.leftOperand.end, node.end);
           }
