@@ -67,6 +67,22 @@ class FileContext {
   /// Returns the unresolved AST for this file.
   ///
   /// If the fully resolved AST is needed, use [getResolvedUnit].
-  CompilationUnit getUnresolvedUnit() =>
-      parseString(content: sourceText, path: path).unit;
+  CompilationUnit getUnresolvedUnit() {
+    final result =
+        parseString(content: sourceText, path: path, throwIfDiagnostics: false);
+    if (result.errors.isEmpty) return result.unit;
+
+    // Errors thrown by parseString don't include the filename, and result in
+    // the codemod halting without indicating which file it failed on.
+    // To aid in debugging, we'll construct the error message the same way
+    // parseString does, but also include the path to the file.
+    var buffer = StringBuffer();
+    for (var error in result.errors) {
+      var location = result.lineInfo.getLocation(error.offset);
+      buffer.writeln('  ${error.errorCode.name}: ${error.message} - '
+          '${location.lineNumber}:${location.columnNumber}');
+    }
+    throw ArgumentError(
+        'File "${relativePath}" produced diagnostics when parsed:\n$buffer');
+  }
 }
