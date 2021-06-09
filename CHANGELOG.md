@@ -1,3 +1,7 @@
+## [1.0.1](https://github.com/Workiva/dart_codemod/compare/1.0.0...1.0.1)
+
+- Include file path in error message when parsing a Dart file fails.
+
 ## [1.0.0](https://github.com/Workiva/dart_codemod/compare/0.3.0...1.0.0)
 
 - Null-safety release.
