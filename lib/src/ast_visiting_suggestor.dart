@@ -63,13 +63,13 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
 
     CompilationUnit unit;
     if (shouldResolveAst(context)) {
-      var result = await context.getResolvedUnit();
-      if (result == null || result.unit == null) {
+      final result = await context.getResolvedUnit();
+      if (result == null) {
         _log.warning(
             'Could not get resolved unit for "${context.relativePath}"');
         return;
       }
-      unit = result.unit!;
+      unit = result.unit;
     } else {
       unit = context.getUnresolvedUnit();
     }
