@@ -1,3 +1,15 @@
+## [1.0.4](https://github.com/Workiva/dart_codemod/compare/1.0.3...1.0.4)
+
+- Switch to replacements for deprecated Dart CLIs
+
+## [1.0.3](https://github.com/Workiva/dart_codemod/compare/1.0.2...1.0.3)
+
+- Fix wildcard in GitHub CI
+
+## [1.0.2](https://github.com/Workiva/dart_codemod/compare/1.0.1...1.0.2)
+
+- Raise Dart SDK minimum to 2.11.0
+
 ## [1.0.1](https://github.com/Workiva/dart_codemod/compare/1.0.0...1.0.1)
 
 - Include file path in error message when parsing a Dart file fails.

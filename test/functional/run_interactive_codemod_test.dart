@@ -58,8 +58,8 @@ Future<Null> testCodemod(
         .replaceAll('path: ../../../', 'path: ${p.current}'));
 
     final pubGetResult = await Process.run(
-      'pub',
-      ['get'],
+      'dart',
+      ['pub', 'get'],
       workingDirectory: projectDir.io.path,
     );
     if (pubGetResult.exitCode != 0) {

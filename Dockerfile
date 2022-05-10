@@ -1,5 +1,5 @@
 FROM google/dart:2 as build
 WORKDIR /build/
 ADD pubspec.yaml /build/
-RUN pub get
+RUN dart pub get
 FROM scratch
