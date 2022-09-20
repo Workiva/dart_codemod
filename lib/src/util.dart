@@ -15,7 +15,6 @@
 import 'dart:math' as math;
 import 'dart:io';
 
-import 'package:codemod/codemod.dart';
 import 'package:io/ansi.dart';
 import 'package:source_span/source_span.dart';
 

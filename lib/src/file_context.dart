@@ -47,7 +47,7 @@ class FileContext {
     final result = await _analysisContextCollection
         .contextFor(path)
         .currentSession
-        .getResolvedLibrary2(path);
+        .getResolvedLibrary(path);
     return result is ResolvedLibraryResult ? result : null;
   }
 
@@ -60,7 +60,7 @@ class FileContext {
     final result = await _analysisContextCollection
         .contextFor(path)
         .currentSession
-        .getResolvedUnit2(path);
+        .getResolvedUnit(path);
     return result is ResolvedUnitResult ? result : null;
   }
 
