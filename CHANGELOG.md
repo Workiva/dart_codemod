@@ -1,3 +1,7 @@
+## [1.0.10](https://github.com/Workiva/dart_codemod/compare/1.0.9...1.0.10)
+
+- Update analyzer dependency to v2
+
 ## [1.0.4](https://github.com/Workiva/dart_codemod/compare/1.0.3...1.0.4)
 
 - Switch to replacements for deprecated Dart CLIs
