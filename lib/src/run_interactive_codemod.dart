@@ -24,7 +24,6 @@ import 'package:path/path.dart' as p;
 
 import 'logging.dart';
 import 'patch.dart';
-import 'suggestor.dart';
 import 'util.dart';
 
 /// Interactively runs a "codemod" by using `stdout` to display a diff for each
