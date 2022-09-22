@@ -31,3 +31,25 @@ jobs:
         run: dart analyze
       - name: Run tests
         run: dart test
+
+  validate_analyzer:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: [ stable ]
+        analyzer:
+          - ^2.0.0
+          - ^3.0.0
+          - ^4.0.0
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+      - name: Update analyzer constraint to ${{ matrix.analyzer }}
+        run: dart pub remove analyzer && dart pub add analyzer:${{ matrix.analyzer }} && git diff pubspec.yaml
+      - name: Analyze project source
+        run: dart analyze
+      - name: Run tests
+        run: dart test
