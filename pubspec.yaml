@@ -27,5 +27,8 @@ dev_dependencies:
   dart_style: ^2.0.0
   dependency_validator: ^3.0.0
   meta: ^1.6.0
-  mockito: ^5.0.3
+  mockito: '>=5.0.0 <5.3.0' # pin to workaround https://github.com/dart-lang/mockito/issues/552
   pedantic: ^1.11.0
+dependency_validator:
+  ignore:
+    - mockito
