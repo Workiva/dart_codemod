@@ -308,7 +308,7 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
         return ExitCode.software.code;
       }
 
-      if (!failOnChanges) {
+      if (!failOnChanges && interactive) {
         logger.fine('applying patches');
 
         var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
