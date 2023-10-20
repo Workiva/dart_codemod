@@ -76,6 +76,7 @@ Future<int> runInteractiveCodemod(
   Suggestor suggestor, {
   Iterable<String> args = const [],
   bool defaultYes = false,
+  bool interactive = true,
   String? additionalHelpOutput,
   String? changesRequiredOutput,
 }) =>
@@ -84,6 +85,7 @@ Future<int> runInteractiveCodemod(
       [suggestor],
       args: args,
       defaultYes: defaultYes,
+      interactive: interactive,
       additionalHelpOutput: additionalHelpOutput,
       changesRequiredOutput: changesRequiredOutput,
     );
@@ -110,6 +112,7 @@ Future<int> runInteractiveCodemodSequence(
   Iterable<Suggestor> suggestors, {
   Iterable<String> args = const [],
   bool defaultYes = false,
+  bool interactive = true,
   String? additionalHelpOutput,
   String? changesRequiredOutput,
 }) async {
@@ -142,6 +145,7 @@ Future<int> runInteractiveCodemodSequence(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
             defaultYes: defaultYes,
+            interactive: interactive,
             changesRequiredOutput: changesRequiredOutput));
   } catch (error, stackTrace) {
     stderr
@@ -185,7 +189,9 @@ final codemodArgParser = ArgParser()
 
 Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
     Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool? defaultYes, String? changesRequiredOutput}) async {
+    {bool interactive = true,
+    bool? defaultYes,
+    String? changesRequiredOutput}) async {
   final failOnChanges = (parsedArgs['fail-on-changes'] as bool?) ?? false;
   final stderrAssumeTty = (parsedArgs['stderr-assume-tty'] as bool?) ?? false;
   final verbose = (parsedArgs['verbose'] as bool?) ?? false;
@@ -243,18 +249,20 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
             continue;
           }
 
-          stdout.write(terminalClear());
-          stdout.write(patch.renderRange());
-          stdout.writeln();
+          if (interactive) {
+            stdout.write(terminalClear());
+            stdout.write(patch.renderRange());
+            stdout.writeln();
 
-          final diffSize = calculateDiffSize(stdout);
-          logger.fine('diff size: $diffSize');
-          stdout.write(patch.renderDiff(diffSize));
-          stdout.writeln();
+            final diffSize = calculateDiffSize(stdout);
+            logger.fine('diff size: $diffSize');
+            stdout.write(patch.renderDiff(diffSize));
+            stdout.writeln();
+          }
 
           final defaultChoice = defaultYes ? 'y' : 'n';
           String choice;
-          if (!yesToAll) {
+          if (!yesToAll && interactive) {
             if (defaultYes) {
               stdout.writeln('Accept change (y = yes [default], n = no, '
                   'A = yes to all, q = quit)? ');
@@ -319,27 +327,29 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
   }
   logger.fine('done');
 
-  for (var patch in skippedPatches) {
-    stdout.writeln(
-        'NOTE: Overlapping patch was skipped. May require manual modification.');
-    stdout.writeln('      ${patch.toString()}');
-    stdout.writeln('      Updated text:');
-    stdout.writeln('      ${patch.updatedText}');
-    stdout.writeln('');
-  }
-
-  if (failOnChanges) {
-    if (numChanges > 0) {
-      stderr.writeln('$numChanges change(s) needed.');
-
-      changesRequiredOutput ??= '';
-      if (changesRequiredOutput.isNotEmpty) {
-        stderr.writeln();
-        stderr.writeln(changesRequiredOutput);
-      }
-      return 1;
+  if (interactive) {
+    for (var patch in skippedPatches) {
+      stdout.writeln(
+          'NOTE: Overlapping patch was skipped. May require manual modification.');
+      stdout.writeln('      ${patch.toString()}');
+      stdout.writeln('      Updated text:');
+      stdout.writeln('      ${patch.updatedText}');
+      stdout.writeln('');
     }
-    stdout.writeln('No changes needed.');
+
+    if (failOnChanges) {
+      if (numChanges > 0) {
+        stderr.writeln('$numChanges change(s) needed.');
+
+        changesRequiredOutput ??= '';
+        if (changesRequiredOutput.isNotEmpty) {
+          stderr.writeln();
+          stderr.writeln(changesRequiredOutput);
+        }
+        return 1;
+      }
+      stdout.writeln('No changes needed.');
+    }
   }
 
   return ExitCode.success.code;
