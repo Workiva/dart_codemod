@@ -308,17 +308,19 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
         return ExitCode.software.code;
       }
 
-      if (!failOnChanges && interactive) {
-        logger.fine('applying patches');
+      if (!failOnChanges) {
+        if (interactive) {
+          logger.fine('applying patches');
 
-        var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
-        // Store patch(es) to print info about skipped patches after codemodding.
-        skippedPatches.addAll(userSkipped);
+          var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
+          // Store patch(es) to print info about skipped patches after codemodding.
+          skippedPatches.addAll(userSkipped);
 
-        // Don't apply the patches the user skipped.
-        for (var patch in userSkipped) {
-          appliedPatches.remove(patch);
-          logger.fine('skipping patch ${patch}');
+          // Don't apply the patches the user skipped.
+          for (var patch in userSkipped) {
+            appliedPatches.remove(patch);
+            logger.fine('skipping patch ${patch}');
+          }
         }
 
         applyPatchesAndSave(context.sourceFile, appliedPatches);
