@@ -25,9 +25,13 @@ class FileContext {
   /// Defaults to current working directory.
   final String root;
 
-  FileContext(this.path, this._analysisContextCollection, {String? root})
+  final String? destPath;
+
+  FileContext(this.path, this._analysisContextCollection,
+      {String? root, String? destPath})
       : root = root ?? p.current,
-        relativePath = p.relative(path, from: root) {
+        relativePath = p.relative(path, from: root),
+        destPath = destPath {
     if (!p.isAbsolute(path)) {
       throw ArgumentError.value(path, 'path', 'must be absolute.');
     }

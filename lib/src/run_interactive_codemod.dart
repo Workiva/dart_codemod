@@ -79,6 +79,7 @@ Future<int> runInteractiveCodemod(
   bool interactive = true,
   String? additionalHelpOutput,
   String? changesRequiredOutput,
+  List<String>? destPaths,
 }) =>
     runInteractiveCodemodSequence(
       filePaths,
@@ -88,6 +89,7 @@ Future<int> runInteractiveCodemod(
       interactive: interactive,
       additionalHelpOutput: additionalHelpOutput,
       changesRequiredOutput: changesRequiredOutput,
+      destPaths: destPaths,
     );
 
 /// Exactly the same as [runInteractiveCodemod] except that it runs all of the
@@ -115,6 +117,7 @@ Future<int> runInteractiveCodemodSequence(
   bool interactive = true,
   String? additionalHelpOutput,
   String? changesRequiredOutput,
+  List<String>? destPaths,
 }) async {
   try {
     ArgResults parsedArgs;
@@ -143,10 +146,15 @@ Future<int> runInteractiveCodemodSequence(
     }
     return overrideAnsiOutput<Future<int>>(
         stdout.supportsAnsiEscapes,
-        () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
-            defaultYes: defaultYes,
-            interactive: interactive,
-            changesRequiredOutput: changesRequiredOutput));
+        () => _runInteractiveCodemod(
+              filePaths,
+              suggestors,
+              parsedArgs,
+              defaultYes: defaultYes,
+              interactive: interactive,
+              changesRequiredOutput: changesRequiredOutput,
+              destPaths: destPaths,
+            ));
   } catch (error, stackTrace) {
     stderr
       ..writeln('Uncaught exception:')
@@ -187,11 +195,22 @@ final codemodArgParser = ArgParser()
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
   );
 
-Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
-    Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool interactive = true,
-    bool? defaultYes,
-    String? changesRequiredOutput}) async {
+Future<int> _runInteractiveCodemod(
+  Iterable<String> filePaths,
+  Iterable<Suggestor> suggestors,
+  ArgResults parsedArgs, {
+  bool interactive = true,
+  bool? defaultYes,
+  String? changesRequiredOutput,
+  List<String>? destPaths,
+}) async {
+  if (destPaths != null) {
+    assert(
+      filePaths.length == destPaths.length,
+      'number of destPaths must be equal to the number of filePaths',
+    );
+  }
+
   final failOnChanges = (parsedArgs['fail-on-changes'] as bool?) ?? false;
   final stderrAssumeTty = (parsedArgs['stderr-assume-tty'] as bool?) ?? false;
   final verbose = (parsedArgs['verbose'] as bool?) ?? false;
@@ -219,15 +238,16 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
       filePaths.map((path) => p.canonicalize(path)).toList();
   final collection =
       AnalysisContextCollection(includedPaths: canonicalizedPaths);
-  final fileContexts =
-      canonicalizedPaths.map((path) => FileContext(path, collection));
   logger.info('done');
 
   final skippedPatches = <Patch>[];
   stdout.writeln('searching...');
 
   for (final suggestor in suggestors) {
-    for (final context in fileContexts) {
+    for (var i = 0; i < canonicalizedPaths.length; i++) {
+      final canonicalizedPath = canonicalizedPaths[i];
+      final context =
+          FileContext(canonicalizedPath, collection, destPath: destPaths?[i]);
       logger.fine('file: ${context.relativePath}');
       final appliedPatches = <Patch>[];
       try {
@@ -323,7 +343,11 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
           }
         }
 
-        applyPatchesAndSave(context.sourceFile, appliedPatches);
+        applyPatchesAndSave(
+          context.sourceFile,
+          appliedPatches,
+          context.destPath,
+        );
       }
     }
   }

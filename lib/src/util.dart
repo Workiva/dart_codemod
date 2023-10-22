@@ -63,7 +63,11 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
 /// Throws an [ArgumentError] if [sourceFile] has a null value for
 /// [SourceFile.url], as it is required to open the file and write the new
 /// contents.
-void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
+void applyPatchesAndSave(
+  SourceFile sourceFile,
+  Iterable<Patch> patches, [
+  String? destPath,
+]) {
   if (patches.isEmpty) {
     return;
   }
@@ -71,7 +75,14 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
     throw ArgumentError('sourceFile.url cannot be null');
   }
   final updatedContents = applyPatches(sourceFile, patches);
-  File.fromUri(sourceFile.url!).writeAsStringSync(updatedContents);
+
+  if (destPath == null) {
+    File.fromUri(sourceFile.url!).writeAsStringSync(updatedContents);
+  } else {
+    File(destPath)
+      ..createSync(recursive: true)
+      ..writeAsStringSync(updatedContents);
+  }
 }
 
 /// Finds overlapping patches and prompts the user to decide how to handle them.
