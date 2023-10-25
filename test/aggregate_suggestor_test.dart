@@ -15,10 +15,10 @@
 @TestOn('vm')
 import 'package:codemod/codemod.dart';
 import 'package:codemod/test.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-import 'aggregate_suggestor_test.mocks.dart';
+class MockPatch extends Mock implements Patch {}
 
 @override
 Stream<Patch> fooSuggestor(_) async* {
@@ -36,7 +36,6 @@ class BarPatch extends MockPatch {}
 
 class ShouldBeSkippedPatch extends MockPatch {}
 
-@GenerateMocks([Patch])
 void main() {
   test('aggregate should yield patches from each suggestor', () async {
     final suggestor = aggregate([fooSuggestor, barSuggestor]);
