@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        sdk: [ stable, beta, dev ]
+        sdk: [ 2.19.6, stable, beta ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: ${{ matrix.sdk }}
@@ -32,24 +32,29 @@ jobs:
       - name: Run tests
         run: dart test
 
-  validate_analyzer:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        sdk: [ stable ]
-        analyzer:
-          - ^5.0.0
-          # Uncomment once we're on Dart 2.19+
-          # - ^6.0.0
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: ${{ matrix.sdk }}
-      - name: Update analyzer constraint to ${{ matrix.analyzer }}
-        run: dart pub remove analyzer && dart pub add analyzer:${{ matrix.analyzer }} && git diff pubspec.yaml
-      - name: Analyze project source
-        run: dart analyze
-      - name: Run tests
-        run: dart test
+  # If new major versions of analyzer are released in the future and we want to
+  # be compatible with multiple majors, use this workflow to validate.
+  # NOTE: we're currently compatible with analyzer v5 and v6, but v5 is only
+  # compatible with Dart 2 and v6 is only compatible with Dart 3, so we are
+  # already testing both major versions above. Use this workflow below if we
+  # need to test compatibility across multiple analyzer majors all on Dart 3.
+  # validate_analyzer:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       sdk: [ stable ]
+  #       analyzer:
+  #         - ^6.0.0
+  #         - ^7.0.0
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dart-lang/setup-dart@v1
+  #       with:
+  #         sdk: ${{ matrix.sdk }}
+  #     - name: Update analyzer constraint to ${{ matrix.analyzer }}
+  #       run: dart pub remove analyzer && dart pub add analyzer:${{ matrix.analyzer }} && git diff pubspec.yaml
+  #     - name: Analyze project source
+  #       run: dart analyze
+  #     - name: Run tests
+  #       run: dart test

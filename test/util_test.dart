@@ -15,17 +15,15 @@
 @TestOn('vm')
 import 'dart:io';
 
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
 
 import 'package:codemod/src/patch.dart';
 import 'package:codemod/src/util.dart';
 
-import 'util_test.mocks.dart';
+class MockStdout extends Mock implements Stdout {}
 
-@GenerateMocks([Stdout])
 void main() {
   group('Utils', () {
     group('applyPatches()', () {
@@ -132,21 +130,21 @@ line 5;''');
     group('calculateDiffSize()', () {
       test('returns 10 if stdout does not have a terminal', () {
         final mockStdout = MockStdout();
-        when(mockStdout.hasTerminal).thenReturn(false);
+        when(() => mockStdout.hasTerminal).thenReturn(false);
         expect(calculateDiffSize(mockStdout), 10);
       });
 
       test('returns 10 if # of terminal lines is too small', () {
         final mockStdout = MockStdout();
-        when(mockStdout.hasTerminal).thenReturn(true);
-        when(mockStdout.terminalLines).thenReturn(15);
+        when(() => mockStdout.hasTerminal).thenReturn(true);
+        when(() => mockStdout.terminalLines).thenReturn(15);
         expect(calculateDiffSize(mockStdout), 10);
       });
 
       test('returns 10 less than available # of terminal lines', () {
         final mockStdout = MockStdout();
-        when(mockStdout.hasTerminal).thenReturn(true);
-        when(mockStdout.terminalLines).thenReturn(50);
+        when(() => mockStdout.hasTerminal).thenReturn(true);
+        when(() => mockStdout.terminalLines).thenReturn(50);
         expect(calculateDiffSize(mockStdout), 40);
       });
     });

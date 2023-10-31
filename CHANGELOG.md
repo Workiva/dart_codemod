@@ -1,3 +1,7 @@
+## [1.1.0](https://github.com/Workiva/dart_codemod/compare/1.0.11...1.1.0)
+
+- Compatibility with Dart 3 and analyzer 6.
+
 ## [1.0.11](https://github.com/Workiva/dart_codemod/compare/1.0.10...1.0.11)
 
 - Widen analyzer dependency range to include v3, v4, and v5.
