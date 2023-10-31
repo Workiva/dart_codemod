@@ -7,10 +7,10 @@ description: >
   towards updating and refactoring Dart code, but can modify any files.
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=2.19.0 <4.0.0'
 
 dependencies:
-  analyzer: ^6.3.0
+  analyzer: '>=5.13.0 <7.0.0'
   args: ^2.0.0
   glob: ^2.0.1
   io: ^1.0.0
