@@ -1,3 +1,10 @@
+## [1.2.0](https://github.com/Workiva/dart_codemod/compare/1.1.0...1.2.0)
+
+- Add `PackageContextForTest` to `package:codemod/test.dart` to help test
+suggestors that require a fully resolved AST from the analyzer (for example:
+suggestors using the `AstVisitingSuggestor` mixin with `shouldResolveAst`
+enabled).
+
 ## [1.1.0](https://github.com/Workiva/dart_codemod/compare/1.0.11...1.1.0)
 
 - Compatibility with Dart 3 and analyzer 6.
