@@ -74,7 +74,7 @@ Future<FileContext> fileContextForTest(String name, String sourceText) async {
 /// will enable the analyzer to resolve imports and symbols from other source
 /// files and dependencies.
 ///     test('MySuggestor', () async {
-///       var pkg = await PackageContextForTest.fromPubspec('pkg', '''
+///       var pkg = await PackageContextForTest.fromPubspec('''
 ///     name: pkg
 ///     version: 0.0.0
 ///     environment:
@@ -82,7 +82,7 @@ Future<FileContext> fileContextForTest(String name, String sourceText) async {
 ///     dependencies:
 ///       meta: ^1.0.0
 ///     ''');
-///       var context = await pkg.addFile('foo.dart', '''
+///       var context = await pkg.addFile('''
 ///     import 'package:meta/meta.dart';
 ///     @visibleForTesting var foo = true;
 ///     ''');
@@ -94,17 +94,23 @@ class PackageContextForTest {
   final AnalysisContextCollection _collection;
   final String _name;
   final String _root;
+  static int _fileCounter = 0;
+  static int _packageCounter = 0;
 
   /// Creates a temporary directory named [dirName] using the `test_descriptor`
   /// package, installs dependencies with `dart pub get`, sets up an analysis
   /// context for the package, and returns a [PackageContextForTest] wrapper
   /// that allows you to add source files to the package and use them in tests.
   ///
+  /// If [dirName] is null, a unique name will be generated.
+  ///
   /// Throws an [ArgumentError] if it fails to install dependencies.
   static Future<PackageContextForTest> fromPubspec(
-    String dirName,
-    String pubspecContents,
-  ) async {
+    String pubspecContents, [
+    String? dirName,
+  ]) async {
+    dirName ??= 'package_${_packageCounter++}';
+
     await d.dir(dirName, [
       d.file('pubspec.yaml', pubspecContents),
     ]).create();
@@ -133,12 +139,16 @@ ${pubGet.stderr}
   /// package) with the given [sourceText] using the `test_descriptor` package
   /// and returns a [FileContext] wrapper around it.
   ///
+  /// If [path] is null, a unique filename will be generated.
+  ///
   /// The returned [FileContext] will use the analysis context for this whole
   /// package rather than just this file, which enables testing of [Suggestor]s
   /// that require the resolved AST.
   ///
   /// See [PackageContextForTest] for an example.
-  Future<FileContext> addFile(String path, String sourceText) async {
+  Future<FileContext> addFile(String sourceText, [String? path]) async {
+    path ??= 'test_${_fileCounter++}.dart';
+
     // Use test_descriptor to create the file in a temporary directory
     d.Descriptor descriptor;
     final segments = p.split(path);
@@ -150,8 +160,8 @@ ${pubGet.stderr}
     }
     // Add the root directory.
     descriptor = d.dir(_name, [descriptor]);
-    await descriptor.create();
 
+    await descriptor.create();
     final canonicalizedPath = p.canonicalize(p.join(d.sandbox, _name, path));
     return FileContext(canonicalizedPath, _collection, root: _root);
   }

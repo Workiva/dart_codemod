@@ -119,7 +119,7 @@ void main() {
     });
 
     test('should resolve AST and work with imports', () async {
-      final pkg = await PackageContextForTest.fromPubspec('pkg', '''
+      final pkg = await PackageContextForTest.fromPubspec('''
 name: pkg
 publish_to: none
 environment:
@@ -127,7 +127,7 @@ environment:
 dependencies:
   meta: ^1.0.0
 ''');
-      final context = await pkg.addFile('test.dart', '''
+      final context = await pkg.addFile('''
 import 'package:meta/meta.dart';
 @alwaysThrows toss() { throw 'Thrown'; }
 ''');
