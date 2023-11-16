@@ -1,8 +1,0 @@
-name: regex_substituter_example
-private: true
-version: 0.0.0
-
-dependencies:
-  codemod: ^0.1.0
-environment:
-  sdk: '>=2.11.0 <3.0.0'

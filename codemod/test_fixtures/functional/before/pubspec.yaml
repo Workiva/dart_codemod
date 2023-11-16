@@ -1,0 +1,10 @@
+name: codemod_test_fixture
+version: 0.0.0
+private: true
+description: test fixture
+environment:
+    sdk: '>=3.0.0 <4.0.0'
+dev_dependencies:
+  codemod:
+    path: ../../../
+  glob: ^2.0.0

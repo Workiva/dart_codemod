@@ -1,0 +1,3 @@
+dependency_overrides:
+  codemod_core:
+    path: ../codemod_core

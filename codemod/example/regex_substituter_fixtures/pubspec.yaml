@@ -1,0 +1,14 @@
+name: regex_substituter_example
+private: true
+version: 0.0.0
+description: regex example
+publish_to: none
+
+environment:
+    sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  codemod:
+    path: ../../
+  codemod_core:
+    path: ../../../codemod_core
