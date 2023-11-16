@@ -72,16 +72,6 @@ Future<Null> testCodemod(
     path: ${p.current}/../codemod_core''',
     ));
 
-    print(pubspec.readAsStringSync());
-    print('pathTo ${pubspec.path}');
-
-    // final pb = PubSpec.loadFromPath(d.path('project/pubspec.yaml'));
-    // (pb.devDependencies['codemod'] as PathDependency).path = p.current;
-    // (pb.devDependencies['codemod_core'] as PathDependency).path =
-    //     join(p.current, '..', 'codemod_core');
-    // pb.save();
-
-    print('running pub get in ${projectDir.io.path}');
     final pubGetResult = await Process.run(
       'dart',
       ['pub', 'get'],

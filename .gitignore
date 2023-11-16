@@ -2,3 +2,6 @@
 .idea/
 .packages
 pubspec.lock
+.history
+codemod/.failed_tracker
+
