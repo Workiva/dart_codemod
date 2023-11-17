@@ -17,6 +17,16 @@ class ChangeSet {
   final SourceFile sourceFile;
   final Path? destinationPath;
 
+  /// If [skipOverlapping] is true then this will
+  /// containe a list of any overlapping patches
+  /// that were not applied.
+  final collisions = <Collision>[];
+
+  /// true if any patches were skipped
+  /// Can only be true if [skipOverlapping] was passed to the 
+  /// [apply] method.
+  bool get skippedOverlapping => collisions.isEmpty;
+
   /// Returns the result of applying all of the [patches]
   /// (insertions/deletions/replacements) to the contents of [sourceFile]
   /// as a String.
@@ -34,12 +44,9 @@ class ChangeSet {
     late Patch prev;
     for (final patch in sortedPatches) {
       if (patch.startOffset < lastEdgeOffset) {
-        final cause = 'Previous patch:\n'
-            '  $prev\n'
-            '  Updated text: ${prev.updatedText}\n'
-            'Overlapping patch:\n'
-            '  $patch\n'
-            '  Updated text: ${patch.updatedText}\n';
+        final collision = Collision(applying: patch, overlapping: prev);
+
+        final cause = collision.description;
 
         if (skipOverlapping) {
           logger.warning('Skipping overlapping patch: $cause');
@@ -91,4 +98,25 @@ $cause
         ..writeAsStringSync(updatedContents);
     }
   }
+}
+
+class Collision {
+  Collision({required this.applying, required this.overlapping});
+
+  /// The patch we were attempting to apply when an over
+  /// lapping patch was discovered.
+  /// This patch will not have been applied.
+  Patch applying;
+
+  /// The overlapping patch.
+  /// This patch will have already been applied.
+  Patch overlapping;
+
+  /// A human readable explaination of what occured.
+  String get description => 'Previous patch:\n'
+      '  $overlapping\n'
+      '  Updated text: ${overlapping.updatedText}\n'
+      'Overlapping patch:\n'
+      '  $applying\n'
+      '  Updated text: ${applying.updatedText}\n';
 }
