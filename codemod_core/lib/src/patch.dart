@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ignore_for_file: avoid_implementing_value_types
+
 import 'dart:math' as math;
 
 import 'package:io/ansi.dart';
+import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
 import 'package:source_span/source_span.dart';
 
@@ -37,22 +40,22 @@ import 'logging.dart';
 ///
 /// Also note that [endOffset] may be null, in which case it defaults to the end
 /// of the file.
+@immutable
 class Patch {
+  const Patch(this.updatedText, this.startOffset, [this.endOffset]);
   final int startOffset;
 
   final int? endOffset;
 
   /// The value that would be written in place of the existing text across the
-  /// [sourceSpan].
+  /// sourceSpan.
   ///
   /// An empty value here represents a deletion, whereas a non-empty value may
   /// represent either an insertion or a replacement.
   final String updatedText;
 
-  Patch(this.updatedText, this.startOffset, [this.endOffset]);
-
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is Patch &&
       startOffset == other.startOffset &&
       endOffset == other.endOffset &&
@@ -69,7 +72,14 @@ class Patch {
 /// [sourceFile] in order to enable the application of this patch to that file.
 ///
 /// This class also includes text rendering utilities for use in a CLI.
+@immutable
 class SourcePatch implements Patch, Comparable<SourcePatch> {
+  const SourcePatch(this.sourceFile, this.sourceSpan, this.updatedText);
+
+  SourcePatch.from(Patch patch, SourceFile sourceFile)
+      : this(sourceFile, sourceFile.span(patch.startOffset, patch.endOffset),
+            patch.updatedText);
+
   /// The original source file upon which this patch represents a change.
   final SourceFile sourceFile;
 
@@ -84,17 +94,11 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
   @override
   final String updatedText;
 
-  SourcePatch(this.sourceFile, this.sourceSpan, this.updatedText);
-
-  SourcePatch.from(Patch patch, SourceFile sourceFile)
-      : this(sourceFile, sourceFile.span(patch.startOffset, patch.endOffset),
-            patch.updatedText);
-
   @override
   int compareTo(SourcePatch other) => sourceSpan.compareTo(other.sourceSpan);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is SourcePatch &&
       sourceSpan == other.sourceSpan &&
       updatedText == other.updatedText;
@@ -177,10 +181,11 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
       'startContextLineNumber': startContextLineNumber,
       'endContextLineNumber': endContextLineNumber,
     };
-    logger.fine(
-        'diff sizing:\n${diffSizingDebug.keys.map((k) => '\t$k: ${diffSizingDebug[k]}').join('\n')}');
-    logger.fine('old text:\n${sourceSpan.text}');
-    logger.fine('new text:\n$updatedText');
+    logger
+      ..fine(
+          '''diff sizing:\n${diffSizingDebug.keys.map((k) => '\t$k: ${diffSizingDebug[k]}').join('\n')}''')
+      ..fine('old text:\n${sourceSpan.text}')
+      ..fine('new text:\n$updatedText');
 
     final buffer = StringBuffer();
     final sourceFileLines = sourceFile.getText(0).split('\n');

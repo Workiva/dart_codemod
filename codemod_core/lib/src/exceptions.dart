@@ -1,6 +1,6 @@
 class CodeMonException implements Exception {
-  String message;
   CodeMonException(this.message);
+  String message;
 }
 
 class PatchException extends CodeMonException {
@@ -12,5 +12,5 @@ class InputException extends CodeMonException {
 }
 
 class QuittingException extends CodeMonException {
-  QuittingException() : super("The user choose the quit option");
+  QuittingException() : super('The user choose the quit option');
 }

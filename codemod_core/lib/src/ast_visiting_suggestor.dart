@@ -5,6 +5,7 @@ import 'package:logging/logging.dart';
 
 import 'file_context.dart';
 import 'patch.dart';
+import 'suggestor.dart';
 
 final _log = Logger('AstVisitingSuggestor');
 
@@ -16,9 +17,6 @@ final _log = Logger('AstVisitingSuggestor');
 /// locations in the source using the offsets provided by the [AstNode]s and
 /// tokens therein.
 ///
-/// Note that this mixin provides an implementation of [generatePatches] that
-/// should not need to be overridden except for performance optimization reasons
-/// like avoiding analysis on certain files.
 ///
 /// By default, this operates on the unresolved AST. Subclasses that need a
 /// fully resolved AST (e.g. for static typing info) should override
@@ -34,7 +32,8 @@ final _log = Logger('AstVisitingSuggestor');
 ///         with AstVisitingSuggestor {
 ///
 ///       static bool isDeprecated(AnnotatedNode node) =>
-///           node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
+///           node.metadata.any((m) => m.name.name.toLowerCase()
+///             == 'deprecated');
 ///
 ///       @override
 ///       visitDeclaration(Declaration node) {
@@ -50,19 +49,23 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
 
   /// The context helper for the file currently being visited.
   FileContext get context {
-    if (_context != null) return _context!;
+    if (_context != null) {
+      return _context!;
+    }
     throw StateError('context accessed outside of a visiting context. '
-        'Ensure that your suggestor only accesses `this.context` inside an AST visitor method.');
+        '''Ensure that your suggestor only accesses `this.context` inside an AST visitor method.''');
   }
 
   FileContext? _context;
 
   Stream<Patch> call(FileContext context) async* {
-    if (shouldSkip(context)) return;
+    if (shouldSkip(context)) {
+      return;
+    }
 
     CompilationUnit unit;
     if (shouldResolveAst(context)) {
-      var result = await context.getResolvedUnit();
+      final result = await context.getResolvedUnit();
       if (result == null) {
         _log.warning(
             'Could not get resolved unit for "${context.relativePath}"');

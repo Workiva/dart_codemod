@@ -30,13 +30,13 @@ final Logger logger = Logger('codemod');
 ///
 /// If [verbose] is true, additional information will be included in the log
 /// messages including stack traces, logger name, and extra newlines.
-Function(LogRecord) logListener(
+void Function(LogRecord) logListener(
   StringSink sink, {
-  bool? ansiOutputEnabled,
-  bool? verbose,
+  bool ansiOutputEnabled = false,
+  bool verbose = false,
 }) =>
-    (record) => overrideAnsiOutput(ansiOutputEnabled == true, () {
-          _logListener(record, sink, verbose: verbose ?? false);
+    (record) => overrideAnsiOutput(ansiOutputEnabled, () {
+          _logListener(record, sink, verbose: verbose);
         });
 
 void _logListener(LogRecord record, StringSink sink, {required bool verbose}) {
@@ -78,7 +78,7 @@ void _logListener(LogRecord record, StringSink sink, {required bool verbose}) {
 /// Filter out the Logger names known to come from `codemod` and splits the
 /// header for levels >= WARNING.
 String _loggerName(LogRecord record, bool verbose) {
-  final knownNames = const [
+  const knownNames = [
     'codemod',
   ];
   return verbose || !knownNames.contains(record.loggerName)

@@ -2,6 +2,8 @@
 // in codemod/test/aggregate_suggestor_test.dart.
 // Do not manually edit this file.
 
+// ignore_for_file: must_be_immutable
+
 import 'package:codemod_core/src/patch.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 

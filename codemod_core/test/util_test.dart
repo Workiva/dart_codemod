@@ -24,7 +24,7 @@ import 'package:test/test.dart';
 void main() {
   group('Utils', () {
     group('applyPatches()', () {
-      final sourceContents = '''
+      const sourceContents = '''
 line 1;
 line 2;
 line 3;
@@ -36,20 +36,20 @@ line 5;''';
       // line 1;
       // <<<
       // li<INS>ne 1;
-      final insertion = Patch('<INS>', 2, 2);
+      const insertion = Patch('<INS>', 2, 2);
 
       // >>>
       // line 2;
       // line 3;
       // <<<
       // l<REP>ine 3;
-      final replacement = Patch('<REP>', 9, 17);
+      const replacement = Patch('<REP>', 9, 17);
 
       // >>>
       // line 4;
       // <<<
       // l4;
-      final deletion = Patch('', 25, 29);
+      const deletion = Patch('', 25, 29);
 
       // >>>
       // line 4;
@@ -60,7 +60,7 @@ line 5;''';
       final eofDeletion = Patch('', sourceFile.length - 'line 5;'.length);
 
       // Patch that overlaps with [replacement].
-      final overlapsReplacement = Patch('NOPE', 11, 12);
+      const overlapsReplacement = Patch('NOPE', 11, 12);
 
       test('returns original source if patches is empty', () {
         expect(ChangeSet(sourceFile, []).apply(), sourceContents);

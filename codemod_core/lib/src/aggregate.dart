@@ -1,3 +1,4 @@
+import 'patch.dart';
 import 'suggestor.dart';
 
 /// Aggregates multiple [Suggestor]s into a single suggestor that yields the
@@ -11,10 +12,8 @@ import 'suggestor.dart';
 ///         ...
 ///       ]),
 ///     );
-Suggestor aggregate(Iterable<Suggestor> suggestors) {
-  return (context) async* {
-    for (final suggestor in suggestors) {
-      yield* suggestor(context);
-    }
-  };
-}
+Suggestor aggregate(Iterable<Suggestor> suggestors) => (context) async* {
+      for (final suggestor in suggestors) {
+        yield* suggestor(context);
+      }
+    };

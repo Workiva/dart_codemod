@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
-import 'package:codemod_core/src/change_set.dart';
 import 'package:path/path.dart';
 
+import 'change_set.dart';
 import 'exceptions.dart';
 import 'file_context.dart';
 import 'logging.dart';
@@ -19,7 +19,7 @@ class PatchGenerator {
       {required Iterable<Path> paths, List<Path>? destPaths}) async* {
     _validateArgs(paths, destPaths);
 
-    final canonicalizedPaths = paths.map((path) => canonicalize(path)).toList();
+    final canonicalizedPaths = paths.map(canonicalize).toList();
 
     final collection =
         AnalysisContextCollection(includedPaths: canonicalizedPaths);
@@ -32,7 +32,7 @@ class PatchGenerator {
       final context = FileContext(canonicalizedPath, collection,
           destPath: destPaths == null ? null : destPaths[i]);
 
-      var patches = <SourcePatch>[];
+      final patches = <SourcePatch>[];
       for (final suggestor in suggestors) {
         logger.fine('file: ${context.relativePath}');
         try {
@@ -45,10 +45,11 @@ class PatchGenerator {
               // error in the suggestor implementation.
               logger.severe('Empty patch suggested: $patch');
               throw PatchException(
-                  'Empty patch suggested: $patch - this is probably a bug a sugestor');
+                  '''Empty patch suggested: $patch - this is probably a bug a sugestor''');
             }
           }
           patches.addAll(patchSet);
+        // ignore: avoid_catches_without_on_clauses
         } catch (e, stackTrace) {
           logger.severe(
               'Suggestor.generatePatches() threw unexpectedly.', e, stackTrace);

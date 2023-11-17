@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ignore_for_file: comment_references
+
 import 'aggregate.dart';
 import 'ast_visiting_suggestor.dart';
 import 'file_context.dart';

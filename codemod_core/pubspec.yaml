@@ -10,7 +10,9 @@ environment:
 dependencies:
   analyzer: ^6.0.0
   io: ^1.0.4
+  lint_hard: ^4.0.0
   logging: ^1.2.0
+  meta: ^1.11.0
   mockito: ^5.4.2
   path: ^1.8.3
   quiver: ^3.2.1

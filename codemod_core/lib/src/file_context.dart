@@ -7,9 +7,19 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 
+import 'patch.dart';
+
 /// A helper class for a file located at [path] that provides access to its
-/// contents and analyzed formats like [CompilationUnit] and [LibraryElement].
+/// contents and analyzed formats like [CompilationUnit] and LibraryElement.
 class FileContext {
+  FileContext(this.path, this._analysisContextCollection,
+      {String? root, this.destPath})
+      : root = root ?? p.current,
+        relativePath = p.relative(path, from: root) {
+    if (!p.isAbsolute(path)) {
+      throw ArgumentError.value(path, 'path', 'must be absolute.');
+    }
+  }
   final AnalysisContextCollection _analysisContextCollection;
 
   /// This file's absolute path.
@@ -25,15 +35,6 @@ class FileContext {
 
   final String? destPath;
 
-  FileContext(this.path, this._analysisContextCollection,
-      {String? root, this.destPath})
-      : root = root ?? p.current,
-        relativePath = p.relative(path, from: root) {
-    if (!p.isAbsolute(path)) {
-      throw ArgumentError.value(path, 'path', 'must be absolute.');
-    }
-  }
-
   /// A representation of this file that makes it easy to reference spans of
   /// text, which is useful for the creation of [SourcePatch]es.
   late final SourceFile sourceFile =
@@ -43,7 +44,7 @@ class FileContext {
   late final String sourceText = File(path).readAsStringSync();
 
   /// Uses the analyzer to resolve and return the library result for this file,
-  /// which includes the [LibraryElement].
+  /// which includes the LibraryElement.
   Future<ResolvedLibraryResult?> getResolvedLibrary() async {
     final result = await _analysisContextCollection
         .contextFor(path)
@@ -71,15 +72,17 @@ class FileContext {
   CompilationUnit getUnresolvedUnit() {
     final result =
         parseString(content: sourceText, path: path, throwIfDiagnostics: false);
-    if (result.errors.isEmpty) return result.unit;
+    if (result.errors.isEmpty) {
+      return result.unit;
+    }
 
     // Errors thrown by parseString don't include the filename, and result in
     // the codemod halting without indicating which file it failed on.
     // To aid in debugging, we'll construct the error message the same way
     // parseString does, but also include the path to the file.
-    var buffer = StringBuffer();
-    for (var error in result.errors) {
-      var location = result.lineInfo.getLocation(error.offset);
+    final buffer = StringBuffer();
+    for (final error in result.errors) {
+      final location = result.lineInfo.getLocation(error.offset);
       buffer.writeln('  ${error.errorCode.name}: ${error.message} - '
           '${location.lineNumber}:${location.columnNumber}');
     }
