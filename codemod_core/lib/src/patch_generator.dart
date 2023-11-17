@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
+import 'package:codemod_core/src/change_set.dart';
 import 'package:path/path.dart';
 
 import 'exceptions.dart';
@@ -14,7 +15,8 @@ class PatchGenerator {
 
   Iterable<Suggestor> suggestors;
 
-  Stream<ChangeSet> apply(Iterable<Path> paths, List<Path>? destPaths) async* {
+  Stream<ChangeSet> generate(
+      {required Iterable<Path> paths, List<Path>? destPaths}) async* {
     _validateArgs(paths, destPaths);
 
     final canonicalizedPaths = paths.map((path) => canonicalize(path)).toList();
@@ -53,21 +55,15 @@ class PatchGenerator {
           throw PatchException(e.toString());
         }
       }
-      yield ChangeSet(context, patches);
+      yield ChangeSet(context.sourceFile, patches,
+          destinationPath: context.destPath);
     }
   }
 
   void _validateArgs(Iterable<Path> paths, Iterable<Path>? destPaths) {
     assert(
-      paths.length == destPaths?.length,
+      destPaths == null || paths.length == destPaths.length,
       'number of destPaths must be equal to the number of filePaths',
     );
   }
-}
-
-/// List of [Patch]es to be applied to [sourcePath]
-class ChangeSet {
-  ChangeSet(this.context, this.patches);
-  List<SourcePatch> patches;
-  FileContext context;
 }

@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "codemod",
+            "cwd": "codemod",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "codemod_core",
+            "cwd": "codemod_core",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "regex_substituter_fixtures",
+            "cwd": "codemod/example/regex_substituter_fixtures",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "before",
+            "cwd": "codemod/test_fixtures/functional/before",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

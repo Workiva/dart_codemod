@@ -8,7 +8,6 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  analyzer: ^5.0.0
   args: ^2.0.0
   codemod_core: ^1.0.0
   glob: ^2.0.1

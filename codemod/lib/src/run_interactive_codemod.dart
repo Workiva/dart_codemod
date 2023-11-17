@@ -231,10 +231,11 @@ Future<int> _runInteractiveCodemod(
   final skippedPatches = <Patch>[];
   stdout.writeln('searching...');
 
-  var patchStream = patchGenerator.apply(filePaths, destPaths);
+  var patchStream =
+      patchGenerator.generate(paths: filePaths, destPaths: destPaths);
 
   await for (final changeSet in patchStream) {
-    final appliedPatches = <Patch>[];
+    final appliedPatches = <SourcePatch>[];
     try {
       for (var patch in changeSet.patches) {
         if (failOnChanges) {
@@ -244,7 +245,7 @@ Future<int> _runInteractiveCodemod(
           continue;
         }
 
-        var choice = acceptPatch(patch, defaultYes, yesToAll, interactive);
+        var choice = _acceptPatch(patch, defaultYes, yesToAll, interactive);
 
         if (choice == Choice.yesToAll) {
           yesToAll = true;
@@ -266,7 +267,7 @@ Future<int> _runInteractiveCodemod(
             logger.fine('skipping patch ${patch}');
           }
 
-          applyPatchesAndSave(changeSet.context.sourceFile, appliedPatches);
+          ChangeSet(changeSet.sourceFile, appliedPatches).applyAndSave();
           logger.fine('quitting');
           return ExitCode.success.code;
         }
@@ -292,11 +293,11 @@ Future<int> _runInteractiveCodemod(
         }
       }
 
-      applyPatchesAndSave(
-        changeSet.context.sourceFile,
+      ChangeSet(
+        changeSet.sourceFile,
         appliedPatches,
-        changeSet.context.destPath,
-      );
+        destinationPath: changeSet.destinationPath,
+      ).applyAndSave();
     }
   }
   logger.fine('done');
@@ -375,7 +376,7 @@ enum Choice {
   }
 }
 
-Choice acceptPatch(
+Choice _acceptPatch(
     SourcePatch patch, bool defaultYes, bool yesToAll, bool interactive) {
   if (!interactive) {
     return Choice.yes;
