@@ -4,4 +4,4 @@
 pubspec.lock
 .history
 codemod/.failed_tracker
-
+codemod_core/.failed_tracker
