@@ -1,0 +1,3 @@
+ignore:
+  # Flagged as a false positive due to one of the unit test files
+  - meta

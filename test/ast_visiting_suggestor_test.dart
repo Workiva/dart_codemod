@@ -46,6 +46,24 @@ class LibNameDoubler extends RecursiveAstVisitor<void>
   }
 }
 
+class AlwaysThrowsFixer extends GeneralizingAstVisitor<void>
+    with AstVisitingSuggestor {
+  @override
+  bool shouldResolveAst(_) => true;
+
+  @override
+  void visitFunctionDeclaration(FunctionDeclaration node) {
+    for (final annotation in node.metadata) {
+      final isAlwaysThrows = annotation.name.name == 'alwaysThrows';
+      final annotationPackage = annotation.element?.library?.identifier ?? '';
+      final isFromPackageMeta = annotationPackage.startsWith('package:meta/');
+      if (isAlwaysThrows && isFromPackageMeta) {
+        yieldPatch('Never', annotation.offset, annotation.end);
+      }
+    }
+  }
+}
+
 void main() {
   group('AstVisitingSuggestor', () {
     test('should get compilation unit, visit it, and yield patches', () async {
@@ -98,6 +116,27 @@ void main() {
       expect(await patchesB.toList(), [Patch('bb', 8, 9)]);
       expect(await patchesA.toList(), [Patch('aa', 8, 9)]);
       expect(await patchesC.toList(), [Patch('cc', 8, 9)]);
+    });
+
+    test('should resolve AST and work with imports', () async {
+      final pkg = await PackageContextForTest.fromPubspec('''
+name: pkg
+publish_to: none
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+dependencies:
+  meta: ^1.0.0
+''');
+      final context = await pkg.addFile('''
+import 'package:meta/meta.dart';
+@alwaysThrows toss() { throw 'Thrown'; }
+''');
+      final expectedOutput = '''
+import 'package:meta/meta.dart';
+Never toss() { throw 'Thrown'; }
+''';
+      expectSuggestorGeneratesPatches(
+          AlwaysThrowsFixer(), context, expectedOutput);
     });
   });
 }

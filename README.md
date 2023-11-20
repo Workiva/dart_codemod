@@ -349,6 +349,52 @@ var foo = 'foo';
 }
 ```
 
+### Testing Suggestors with Resolved AST
+
+The `fileContextForTest()` helper shown above makes it easy to test suggestors
+that operate on the _unresolved_ AST, but some suggestors require the _resolved_
+AST. For example, a suggestor may need to rename a specific symbol from a specific
+package, and so it would need to check the resolved element of a node. This is
+only possible if the analysis context is aware of all the relevant files and
+package dependencies.
+
+To help with this scenario, the `package:codemod/test.dart` library also exports
+a `PackageContextForTest` helper class. This class handles creating a temporary
+package directory, installing dependencies, and setting up an analysis context
+that has access to the whole package and its dependencies. You can then add
+source file(s) and use the wrapping `FileContext`s to test suggestors.
+
+```dart
+import 'package:codemod/codemod.dart';
+import 'package:source_span/source_span.dart';
+import 'package:test/test.dart';
+
+void main() {
+  group('AlwaysThrowsFixer', () {
+    test('returns Never instead', () async {
+      final pkg = await PackageContextForTest.fromPubspec('''
+name: pkg
+publish_to: none
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  meta: ^1.0.0
+''');
+      final context = await pkg.addFile('''
+import 'package:meta/meta.dart';
+@alwaysThrows toss() { throw 'Thrown'; }
+''');
+      final expectedOutput = '''
+import 'package:meta/meta.dart';
+Never toss() { throw 'Thrown'; }
+''';
+      expectSuggestorGeneratesPatches(
+          AlwaysThrowsFixer(), context, expectedOutput);
+    });
+  });
+}
+```
+
 ## References
 
 - [over_react_codemod][over_react_codemod]: codemods for the `over_react` UI
