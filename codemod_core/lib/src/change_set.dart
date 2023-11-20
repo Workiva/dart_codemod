@@ -84,9 +84,6 @@ $cause
   /// and the contents of [sourceFile] are written to [destPath] with
   /// the patches applied.
   void applyAndSave({String? destPath, bool skipOverlapping = false}) {
-    if (patches.isEmpty) {
-      return;
-    }
     if (sourceFile.url == null) {
       throw ArgumentError('sourceFile.url cannot be null');
     }
