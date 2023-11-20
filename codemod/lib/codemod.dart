@@ -13,14 +13,17 @@
 // limitations under the License.
 
 export 'package:codemod_core/codemod_core.dart'
-    show aggregate, AstVisitingSuggestor, FileContext, Patch, Suggestor;
-
-export 'src/file_query_util.dart'
     show
+        aggregate,
+        AstVisitingSuggestor,
+        FileContext,
+        Patch,
+        Suggestor,
         filePathsFromGlob,
-        isHiddenFile,
-        isNotHiddenFile,
         isDartHiddenFile,
-        isNotDartHiddenFile;
+        isHiddenFile,
+        isNotDartHiddenFile,
+        isNotHiddenFile;
+
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;
