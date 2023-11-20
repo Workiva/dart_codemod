@@ -10,11 +10,46 @@ import 'suggestor.dart';
 
 typedef Path = String;
 
+/// The [PatchGenerator] is the main entry point to codemod_core.
+///
+/// The [PatchGenerator] creates [ChangeSet]s based on a set of
+/// [Suggestor]s that you supply.
+///
+/// You can then 'apply' those changes to the Dart Libraries.
+/// ```dart
+/// void main(List<String> args) async {
+///     /// Identify the that we want to add a license header to
+///     var paths = filePathsFromGlob(
+///     Glob(join('fixtures', 'license_header', '**.dart')),
+///   );
+///
+///   /// Instantiate the [PatchGenerator] with the set of
+///   /// Suggestors we are going to using to generate [ChangeSet]s.
+///   var pg = PatchGenerator([licenseHeaderInserter]);
+///
+///   /// Generate the [ChangeSet]s.
+///   var changeSets = pg.generate(paths: paths);
+///
+///   /// Apply the [ChangeSet] to the code.
+///   await for (var changeSet in changeSets) {
+///     /// Change .apply to .applyAndSave to write the changes to disk
+///     /// overwritting the existing .dart source files.
+///     /// ---------------------------------------
+///     /// WARNING: backup your source first!!!!
+///     /// ---------------------------------------
+///     var patchedSource = changeSet.apply();
+///     // changeSet.applyAndSave();
+///   }
+/// }
+/// ```dart
+///
 class PatchGenerator {
   PatchGenerator(this.suggestors);
 
   Iterable<Suggestor> suggestors;
 
+  /// Generates a [Stream] of [ChangeSet] objects based on the passed
+  /// [suggestors] that need to be applied to the source.
   Stream<ChangeSet> generate(
       {required Iterable<Path> paths, List<Path>? destPaths}) async* {
     _validateArgs(paths, destPaths);
@@ -49,7 +84,7 @@ class PatchGenerator {
             }
           }
           patches.addAll(patchSet);
-        // ignore: avoid_catches_without_on_clauses
+          // ignore: avoid_catches_without_on_clauses
         } catch (e, stackTrace) {
           logger.severe(
               'Suggestor.generatePatches() threw unexpectedly.', e, stackTrace);

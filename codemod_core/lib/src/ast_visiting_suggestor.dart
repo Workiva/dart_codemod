@@ -100,5 +100,6 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
 
   void yieldPatch(String updatedText, int startOffset, [int? endOffset]) {
     _patches.add(Patch(updatedText, startOffset, endOffset));
+    
   }
 }
