@@ -2,6 +2,7 @@ name: codemod_core
 version: 1.0.1
 publish_to: https://onepub.dev/api/jbbxpsdavu/
 description: A sample command-line application.
+homepage: https://github.com/Workiva/dart_codemod
 environment: 
   sdk: '>=3.0.0 <4.0.0'
 dependencies: 
