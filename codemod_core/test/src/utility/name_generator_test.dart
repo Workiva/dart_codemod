@@ -6,8 +6,13 @@ import 'package:test/test.dart';
 void main() {
   test('name generator ...', () async {
     final gen = VariableNameGenerator();
+    var last = '';
     for (var i = 0; i < 1000; i++) {
-      print(gen.next());
+      last = gen.next();
+      if (i == 0) {
+        expect(last, equals('a'));
+      }
     }
+    expect(last, equals('all'));
   });
 }
