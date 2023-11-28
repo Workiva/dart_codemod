@@ -1,5 +1,5 @@
 name: codemod_core
-version: 1.0.0
+version: 1.0.1
 publish_to: https://onepub.dev/api/jbbxpsdavu/
 description: A sample command-line application.
 environment: 
