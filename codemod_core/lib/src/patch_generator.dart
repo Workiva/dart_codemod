@@ -50,6 +50,7 @@ class PatchGenerator {
 
   /// Generates a [Stream] of [ChangeSet] objects based on the passed
   /// [suggestors] that need to be applied to the source.
+  /// Throws a [PatchException] or any exception thrown by the [Suggestor]s.
   Stream<ChangeSet> generate(
       {required Iterable<Path> paths, List<Path>? destPaths}) async* {
     _validateArgs(paths, destPaths);
@@ -88,7 +89,7 @@ class PatchGenerator {
         } catch (e, stackTrace) {
           logger.severe(
               'Suggestor.generatePatches() threw unexpectedly.', e, stackTrace);
-          throw PatchException(e.toString());
+          rethrow;
         }
       }
       yield ChangeSet(context.sourceFile, patches,
