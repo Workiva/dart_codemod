@@ -1,5 +1,5 @@
 name: codemod_core
-version: 1.0.1
+version: 1.1.0
 homepage: https://github.com/Workiva/dart_codemod
 publish_to: https://onepub.dev/api/jbbxpsdavu/
 description: A sample command-line application.
