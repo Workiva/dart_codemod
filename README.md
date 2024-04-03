@@ -195,7 +195,7 @@ All you need to run a codemod is:
 
 3. A `.dart` file with a `main()` block that calls `runInteractiveCodemod()`.
 
-If we were to run the 3 suggestor examples from above, it would like like so:
+If we were to run the 3 suggestor examples from above, it would look like so:
 
 **Regex Substituter:**
 
