@@ -31,6 +31,10 @@ jobs:
         run: dart analyze
       - name: Run tests
         run: dart test
+      - uses: anchore/sbom-action@v0
+        with:
+          path: ./
+          format: cyclonedx-json
 
   # If new major versions of analyzer are released in the future and we want to
   # be compatible with multiple majors, use this workflow to validate.
