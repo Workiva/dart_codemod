@@ -1,2 +1,1 @@
 include: package:workiva_analysis_options/v2.yaml
-include: package:pedantic/analysis_options.1.9.0.yaml
