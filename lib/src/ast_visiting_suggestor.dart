@@ -29,7 +29,7 @@ final _log = Logger('AstVisitingSuggestor');
 /// the following suggestor that aims to remove all deprecated declarations:
 ///
 ///     import 'package:analyzer/analyzer.dart';
-///     import 'package:codemod/codemod.dart';
+///     
 ///
 ///     class DeprecatedRemover extends GeneralizingAstVisitor
 ///         with AstVisitingSuggestor {
