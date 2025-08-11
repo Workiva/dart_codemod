@@ -16,6 +16,8 @@ import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:args/args.dart';
+import 'package:codemod/src/file_context.dart';
+import 'package:codemod/src/suggestor.dart';
 
 import 'package:io/ansi.dart';
 import 'package:io/io.dart';
@@ -49,7 +51,7 @@ import 'util.dart';
 /// block like so:
 ///     import 'dart:io';
 ///
-///     
+///     import 'package:codemod/codemod.dart';
 ///
 ///     void main(List<String> args) {
 ///       exitCode = runInteractiveCodemod(

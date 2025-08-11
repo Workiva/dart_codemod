@@ -39,7 +39,7 @@ import 'run_interactive_codemod.dart'
 /// For simple suggestors, it may be sufficient to write a function that
 /// operates on the source text manually (potentially by using regexes). Here's
 /// an example of this:
-///     
+///     import 'package:codemod/codemod.dart';
 ///
 ///     /// Pattern that matches a dependency version constraint line for the `codemod`
 ///     /// package, with the first capture group being the constraint.
