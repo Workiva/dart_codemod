@@ -1,5 +1,10 @@
 # codemod for Dart
 
+[![Slack Channel](https://img.shields.io/badge/Support_Channel-Slack-purple)](https://slack.com/app_redirect?channel=support-frontend-dx)
+[![Maintainer](https://img.shields.io/badge/maintainer-FEDX-silver)](https://wiki.atl.workiva.net/display/FEF/Frontend+Dev+Experience)
+[![Documentation](https://img.shields.io/badge/Additional_Documentation-blue)](https://frontend.workiva.dev)
+[![CI](https://github.com/Workiva/dart_codemod/actions/workflows/dart_ci.yaml/badge.svg?branch=master)](https://github.com/Workiva/dart_codemod/actions/workflows/dart_ci.yaml)
+[![codecov](https://codecov.io/gh/Workiva/dart_codemod/branch/master/graph/badge.svg?token=7S7VXS0TSJ)](https://codecov.io/gh/Workiva/dart_codemod)
 [![Pub](https://img.shields.io/pub/v/codemod.svg)](https://pub.dartlang.org/packages/codemod)
 [![Dart CI](https://github.com/Workiva/dart_codemod/workflows/Dart%20CI/badge.svg?branch=master)](https://github.com/Workiva/dart_codemod/actions?query=workflow%3A%22Dart+CI%22+branch%3Amaster)
 
