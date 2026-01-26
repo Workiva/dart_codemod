@@ -232,6 +232,90 @@ final codemodArgParser = ArgParser()
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
   );
 
+/// Displays the final summary report with statistics.
+void _displaySummary(
+  CodemodStats stats,
+  TerminalOutput terminal,
+  Stdout stdout,
+  List<Patch> skippedPatches,
+  bool verbose,
+) {
+  // Ensure end time is set
+  stats.endTime ??= DateTime.now();
+
+  stdout.writeln('');
+  stdout.writeln('');
+  if (stdout.supportsAnsiEscapes) {
+    stdout.writeln(
+      '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+    );
+  } else {
+    stdout.writeln(
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    );
+  }
+  terminal.section('Summary');
+
+  terminal.keyValue(
+    'Files processed',
+    '${stats.filesProcessed}',
+    highlightValue: true,
+  );
+  terminal.keyValue(
+    'Files modified',
+    '${stats.filesModified}',
+    highlightValue: true,
+  );
+  terminal.keyValue('Patches suggested', '${stats.patchesSuggested}');
+  terminal.keyValue(
+    'Patches applied',
+    '${stats.patchesApplied}',
+    highlightValue: true,
+  );
+  terminal.keyValue('Patches skipped', '${stats.patchesSkipped}');
+  if (stats.patchesIgnored > 0) {
+    terminal.keyValue('Patches ignored', '${stats.patchesIgnored}');
+  }
+  if (stats.errors > 0) {
+    terminal.keyValue('Errors', '${stats.errors}', highlightValue: true);
+  }
+  if (stats.duration != null) {
+    final duration = stats.duration!;
+    final durationStr = duration.inSeconds < 60
+        ? '${duration.inSeconds}s'
+        : '${duration.inMinutes}m ${duration.inSeconds % 60}s';
+    terminal.keyValue('Duration', durationStr);
+  }
+  if (stdout.supportsAnsiEscapes) {
+    stdout.writeln('');
+    stdout.writeln(
+      '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+    );
+  } else {
+    stdout.writeln('');
+    stdout.writeln(
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    );
+  }
+
+  if (verbose) {
+    stdout.writeln('');
+    terminal.section('Detailed Statistics');
+    stdout.writeln(stats.getSummary());
+  }
+
+  if (skippedPatches.isNotEmpty) {
+    stdout.writeln('');
+    terminal.note(
+      'Overlapping patches were skipped and may require manual modification:',
+    );
+    for (var patch in skippedPatches) {
+      terminal.listItem(patch.toString(), isError: false);
+      terminal.helpText('Updated text: ${patch.updatedText}');
+    }
+  }
+}
+
 Future<int> _runInteractiveCodemod(
   Iterable<String> filePaths,
   Iterable<Suggestor> suggestors,
@@ -268,6 +352,12 @@ Future<int> _runInteractiveCodemod(
     // Warn and exit early if there are no inputs.
     if (filePaths.isEmpty) {
       terminal.warning('No files found to process');
+      final emptyStats = CodemodStats();
+      emptyStats.startTime = DateTime.now();
+      emptyStats.endTime = DateTime.now();
+      _displaySummary(emptyStats, terminal, stdout, [], verbose);
+      stdout.writeln('');
+      terminal.success('✓ Codemod completed (no files to process)');
       return ExitCode.success.code;
     }
 
@@ -466,6 +556,10 @@ Future<int> _runInteractiveCodemod(
 
               applyPatchesAndSave(context.sourceFile, appliedPatches);
               logger.fine('quitting');
+              stats.endTime = DateTime.now();
+              _displaySummary(stats, terminal, stdout, skippedPatches, verbose);
+              stdout.writeln('');
+              terminal.success('✓ Codemod completed (user quit)');
               return ExitCode.success.code;
             }
           }
@@ -504,77 +598,7 @@ Future<int> _runInteractiveCodemod(
     logger.fine('done');
 
     // Display summary
-    stdout.writeln('');
-    stdout.writeln('');
-    if (stdout.supportsAnsiEscapes) {
-      stdout.writeln(
-        '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
-      );
-    } else {
-      stdout.writeln(
-        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-      );
-    }
-    terminal.section('Summary');
-
-    terminal.keyValue(
-      'Files processed',
-      '${stats.filesProcessed}',
-      highlightValue: true,
-    );
-    terminal.keyValue(
-      'Files modified',
-      '${stats.filesModified}',
-      highlightValue: true,
-    );
-    terminal.keyValue('Patches suggested', '${stats.patchesSuggested}');
-    terminal.keyValue(
-      'Patches applied',
-      '${stats.patchesApplied}',
-      highlightValue: true,
-    );
-    terminal.keyValue('Patches skipped', '${stats.patchesSkipped}');
-    if (stats.patchesIgnored > 0) {
-      terminal.keyValue('Patches ignored', '${stats.patchesIgnored}');
-    }
-    if (stats.errors > 0) {
-      terminal.keyValue('Errors', '${stats.errors}', highlightValue: true);
-    }
-    if (stats.duration != null) {
-      final duration = stats.duration!;
-      final durationStr = duration.inSeconds < 60
-          ? '${duration.inSeconds}s'
-          : '${duration.inMinutes}m ${duration.inSeconds % 60}s';
-      terminal.keyValue('Duration', durationStr);
-    }
-    if (stdout.supportsAnsiEscapes) {
-      stdout.writeln('');
-      stdout.writeln(
-        '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
-      );
-    } else {
-      stdout.writeln('');
-      stdout.writeln(
-        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-      );
-    }
-
-    if (verbose) {
-      stdout.writeln('');
-      terminal.section('Detailed Statistics');
-      stdout.writeln(stats.getSummary());
-    }
-
-    if (skippedPatches.isNotEmpty) {
-      stdout.writeln('');
-      terminal.note(
-        'Overlapping patches were skipped and may require manual modification:',
-      );
-      for (var patch in skippedPatches) {
-        terminal.listItem(patch.toString(), isError: false);
-        terminal.helpText('Updated text: ${patch.updatedText}');
-      }
-    }
+    _displaySummary(stats, terminal, stdout, skippedPatches, verbose);
 
     if (failOnChanges) {
       if (numChanges > 0) {
