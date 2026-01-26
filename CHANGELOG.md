@@ -1,3 +1,23 @@
+## [1.3.0](https://github.com/Workiva/dart_codemod/compare/1.2.0...1.3.0)
+
+- **New**: Added ignore mechanism support via `// codemod_ignore` comments
+  - Single line ignore: `// codemod_ignore` or `// codemod_ignore: reason`
+  - Block ignore: `// codemod_ignore_start` ... `// codemod_ignore_end`
+  - Supports both `//` and `/* */` comment styles
+- **New**: Added `CodemodStats` class for tracking execution statistics
+  - Tracks files processed, patches applied, skipped, ignored, and errors
+  - Provides summary output in verbose mode
+- **New**: Added `FileFilter` and `FileFilterConfig` for advanced file filtering
+  - Support for include/exclude glob patterns
+  - Configurable hidden file handling
+- **New**: Improved error handling with graceful recovery
+  - Errors in one file no longer stop the entire codemod
+  - Error statistics tracked in `CodemodStats`
+- **Breaking**: Updated minimum Dart SDK to 3.9.0
+- Updated all dependencies to latest compatible versions
+- Replaced deprecated `pedantic` linter with `lints` package
+- Fixed all linter warnings and improved code quality
+
 ## [1.2.0](https://github.com/Workiva/dart_codemod/compare/1.1.0...1.2.0)
 
 - Add `PackageContextForTest` to `package:codemod/test.dart` to help test

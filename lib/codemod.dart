@@ -14,7 +14,9 @@
 
 export 'src/aggregate.dart' show aggregate;
 export 'src/ast_visiting_suggestor.dart' show AstVisitingSuggestor;
+export 'src/codemod_stats.dart' show CodemodStats;
 export 'src/file_context.dart' show FileContext;
+export 'src/file_filter.dart' show FileFilter, FileFilterConfig;
 export 'src/file_query_util.dart'
     show
         filePathsFromGlob,
@@ -22,6 +24,8 @@ export 'src/file_query_util.dart'
         isNotHiddenFile,
         isDartHiddenFile,
         isNotDartHiddenFile;
+export 'src/ignore_util.dart'
+    show filterIgnoredPatches, shouldIgnorePatch;
 export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;

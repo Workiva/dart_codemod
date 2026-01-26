@@ -395,6 +395,86 @@ Never toss() { throw 'Thrown'; }
 }
 ```
 
+## Ignoring Patches
+
+Sometimes you may want to exclude specific lines or blocks of code from codemod
+suggestions. You can use ignore comments to achieve this:
+
+### Single Line Ignore
+
+Place `// codemod_ignore` or `// codemod_ignore: <reason>` on the line before
+the code you want to ignore:
+
+```dart
+// codemod_ignore
+var deprecatedVariable = 'value';
+
+// codemod_ignore: This is a special case
+function specialFunction() {
+  // ...
+}
+```
+
+### Block Ignore
+
+Use `// codemod_ignore_start` and `// codemod_ignore_end` to ignore a block of
+code:
+
+```dart
+// codemod_ignore_start
+function example1() {
+  // This function will be ignored
+}
+
+function example2() {
+  // This function will also be ignored
+}
+// codemod_ignore_end
+```
+
+Both `//` and `/* */` comment styles are supported.
+
+## Statistics and Metrics
+
+When running in verbose mode (`--verbose`), codemod will output execution
+statistics including:
+
+- Files processed and modified
+- Patches suggested, applied, skipped, and ignored
+- Errors encountered
+- Execution duration
+
+Example output:
+
+```
+Codemod Statistics:
+  Files processed: 42
+  Files modified: 15
+  Patches suggested: 38
+  Patches applied: 32
+  Patches skipped: 3
+  Patches ignored: 3
+  Duration: 12s
+```
+
+## File Filtering
+
+You can use `FileFilter` and `FileFilterConfig` to create advanced file
+filtering rules:
+
+```dart
+import 'package:codemod/codemod.dart';
+
+final filter = FileFilter(FileFilterConfig(
+  includePatterns: ['lib/**/*.dart'],
+  excludePatterns: ['lib/**/*.g.dart', 'lib/**/*.freezed.dart'],
+  ignoreHidden: true,
+  ignoreDartHidden: true,
+));
+
+final filteredFiles = filter.filterFiles(allFiles);
+```
+
 ## References
 
 - [over_react_codemod][over_react_codemod]: codemods for the `over_react` UI

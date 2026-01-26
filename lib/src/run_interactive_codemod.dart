@@ -218,17 +218,27 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
   logger.info('done');
 
   final skippedPatches = <Patch>[];
+  final stats = CodemodStats();
+  stats.startTime = DateTime.now();
   stdout.writeln('searching...');
 
   for (final suggestor in suggestors) {
     for (final context in fileContexts) {
       logger.fine('file: ${context.relativePath}');
+      stats.filesProcessed++;
       final appliedPatches = <Patch>[];
       try {
         final patches = await suggestor(context)
             .map((p) => SourcePatch.from(p, context.sourceFile))
             .toList();
-        for (final patch in patches) {
+        
+        stats.patchesSuggested += patches.length;
+        
+        // Filter out patches that should be ignored
+        final filteredPatches = filterIgnoredPatches(patches, context.sourceText);
+        stats.patchesIgnored += patches.length - filteredPatches.length;
+        
+        for (final patch in filteredPatches) {
           if (patch.isNoop) {
             // Patch suggested, but without any changes. This is probably an
             // error in the suggestor implementation.
@@ -276,6 +286,9 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
           if (choice == 'y') {
             logger.fine('patch accepted: $patch');
             appliedPatches.add(patch);
+            stats.patchesApplied++;
+          } else {
+            stats.patchesSkipped++;
           }
           if (choice == 'q') {
             logger.fine('applying patches');
@@ -294,11 +307,6 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
             return ExitCode.success.code;
           }
         }
-      } catch (e, stackTrace) {
-        logger.severe(
-            'Suggestor.generatePatches() threw unexpectedly.', e, stackTrace);
-        return ExitCode.software.code;
-      }
 
       if (!failOnChanges) {
         logger.fine('applying patches');
@@ -313,11 +321,25 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
           logger.fine('skipping patch $patch');
         }
 
-        applyPatchesAndSave(context.sourceFile, appliedPatches);
+        if (appliedPatches.isNotEmpty) {
+          applyPatchesAndSave(context.sourceFile, appliedPatches);
+          stats.filesModified++;
+        }
+      }
+      } catch (e, stackTrace) {
+        stats.errors++;
+        logger.severe(
+            'Error processing file ${context.relativePath}: $e', e, stackTrace);
+        // Continue with next file instead of failing completely
       }
     }
   }
+  stats.endTime = DateTime.now();
   logger.fine('done');
+  
+  if (verbose) {
+    logger.info(stats.getSummary());
+  }
 
   for (var patch in skippedPatches) {
     stdout.writeln(
@@ -342,5 +364,8 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
     stdout.writeln('No changes needed.');
   }
 
+  if (stats.errors > 0) {
+    return ExitCode.software.code;
+  }
   return ExitCode.success.code;
 }
