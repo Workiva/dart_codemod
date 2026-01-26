@@ -158,7 +158,8 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
   /// patch will be included for context. The number of these lines that are
   /// included for context will be based on the number of lines left (using
   /// [numRowsToPrint] as the maximum) after rendering the patch diff.
-  String renderDiff(int numRowsToPrint) {
+  String renderDiff(int numRowsToPrint, {bool? ansiEnabled}) {
+    final useAnsi = ansiEnabled ?? ansiOutputEnabled;
     final sizeOfOld = endLine - startLine;
     final sizeOfNew = updatedText.isNotEmpty
         ? updatedText.split('\n').length
@@ -194,12 +195,22 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
         ? sourceFile.span(endOffset, endLineOffset).text
         : '';
 
+    // Add diff header with visual separator
+    if (useAnsi) {
+      buffer.writeln('${styleDim.wrap('┌─')} ${styleBold.wrap('Diff')}');
+    } else {
+      buffer.writeln('┌─ Diff');
+    }
+
     void writeFileLine(int lineNumber) {
-      buffer.writeln(
-        lineNumber >= 0 && lineNumber < sourceFileLines.length
-            ? '  ${sourceFileLines[lineNumber]}'
-            : '~',
-      );
+      final lineContent = lineNumber >= 0 && lineNumber < sourceFileLines.length
+          ? sourceFileLines[lineNumber]
+          : '~';
+      if (useAnsi) {
+        buffer.writeln('${styleDim.wrap('│')} $lineContent');
+      } else {
+        buffer.writeln('│ $lineContent');
+      }
     }
 
     void writeDiffLines(List<String> lines, String linePrefix, AnsiCode color) {
@@ -211,7 +222,12 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
         if (i == lines.length - 1) {
           line = line + patchPostContext;
         }
-        buffer.writeln(color.wrap(linePrefix)! + line);
+        final prefix = color.wrap(linePrefix) ?? linePrefix;
+        if (useAnsi) {
+          buffer.writeln('${styleDim.wrap('│')} $prefix ${color.wrap(line)}');
+        } else {
+          buffer.writeln('│ $prefix $line');
+        }
       }
     }
 
@@ -224,6 +240,13 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
     }
     for (var i = endLine; i < endContextLineNumber; i++) {
       writeFileLine(i);
+    }
+
+    // Add diff footer
+    if (useAnsi) {
+      buffer.writeln('${styleDim.wrap('└─')}');
+    } else {
+      buffer.writeln('└─');
     }
 
     return buffer.toString();

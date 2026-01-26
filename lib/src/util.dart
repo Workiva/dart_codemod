@@ -173,16 +173,47 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
       final prevInfo = prev != null
           ? '  $prev\n  Updated text: ${prev.updatedText}\n'
           : '  (first patch)\n';
-      stdout.writeln(
-        'A patch that overlaps with a previous patch applied was found. '
-        'Do you want to skip this patch, or quit the codemod?\n'
-        'Previous patch:\n$prevInfo'
-        'Overlapping patch:\n'
-        '  $patch\n'
-        '  Updated text: ${patch.updatedText}\n'
-        '(s = skip this patch and apply the rest [default],\n'
-        'q = quit)',
-      );
+
+      // Use colors if available
+      if (stdout.supportsAnsiEscapes) {
+        stdout.writeln('');
+        stdout.writeln(
+          '${yellow.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+        stdout.writeln(
+          '${yellow.wrap('⚠')} ${styleBold.wrap(yellow.wrap('Overlapping patches detected!'))}',
+        );
+        stdout.writeln(
+          '${yellow.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+        stdout.writeln('');
+        stdout.writeln('${red.wrap('Previous patch:')}');
+        stdout.writeln(prevInfo);
+        stdout.writeln('${red.wrap('Overlapping patch:')}');
+        stdout.writeln('  $patch');
+        stdout.writeln('  Updated text: ${patch.updatedText}');
+        stdout.writeln('');
+        stdout.writeln('${styleBold.wrap('What would you like to do?')}');
+        stdout.writeln('');
+        stdout.writeln(
+          '  ${green.wrap('s')} ${styleDim.wrap('= skip this patch and continue')} ${styleBold.wrap('[default]')}',
+        );
+        stdout.writeln(
+          '  ${yellow.wrap('q')} ${styleDim.wrap('= quit codemod')}',
+        );
+        stdout.writeln('');
+      } else {
+        stdout.writeln(
+          'A patch that overlaps with a previous patch applied was found. '
+          'Do you want to skip this patch, or quit the codemod?\n'
+          'Previous patch:\n$prevInfo'
+          'Overlapping patch:\n'
+          '  $patch\n'
+          '  Updated text: ${patch.updatedText}\n'
+          '(s = skip this patch and apply the rest [default],\n'
+          'q = quit)',
+        );
+      }
 
       var choice = prompt('sq', 's');
 
@@ -226,7 +257,15 @@ String prompt([String letters = 'yn', String? defaultChoice]) {
   while (true) {
     final response = stdin.readLineSync();
     if (response == null || response.length > 1) {
-      stdout.writeln('Come again? (only enter a single character)');
+      if (stdout.supportsAnsiEscapes) {
+        stdout.writeln(
+          '${red.wrap('✗')} ${red.wrap('Invalid input. Please enter a single character.')}',
+        );
+      } else {
+        stdout.writeln(
+          '[ERROR] Invalid input. Please enter a single character.',
+        );
+      }
       continue;
     }
     if (response.isNotEmpty && letters.contains(response)) {
@@ -235,7 +274,13 @@ String prompt([String letters = 'yn', String? defaultChoice]) {
     if (defaultChoice != null && response.isEmpty) {
       return defaultChoice;
     }
-    stdout.writeln('Come again?');
+    if (stdout.supportsAnsiEscapes) {
+      stdout.writeln(
+        '${yellow.wrap('⚠')} ${yellow.wrap('Invalid choice. Please try again.')}',
+      );
+    } else {
+      stdout.writeln('[WARNING] Invalid choice. Please try again.');
+    }
   }
 }
 

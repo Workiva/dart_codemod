@@ -25,6 +25,7 @@ import 'package:path/path.dart' as p;
 
 import 'logging.dart';
 import 'patch.dart';
+import 'terminal_output.dart';
 import 'util.dart';
 
 /// Interactively runs a "codemod" by using `stdout` to display a diff for each
@@ -118,23 +119,64 @@ Future<int> runInteractiveCodemodSequence(
     try {
       parsedArgs = codemodArgParser.parse(args);
     } on ArgParserException catch (e) {
-      stderr
-        ..writeln('Invalid codemod arguments: ${e.message}')
-        ..writeln()
-        ..writeln(codemodArgParser.usage);
+      final terminal = TerminalOutput(
+        ansiEnabled: stderr.supportsAnsiEscapes,
+        stdout: stdout,
+        stderr: stderr,
+      );
+      terminal.error('Invalid arguments: ${e.message}');
+      stdout.writeln('');
+      terminal.section('Usage');
+      stdout.writeln(codemodArgParser.usage);
       return ExitCode.usage.code;
     }
 
     if (parsedArgs['help'] == true) {
-      stderr.writeln('Global codemod options:');
-      stderr.writeln();
-      stderr.writeln(codemodArgParser.usage);
+      final terminal = TerminalOutput(
+        ansiEnabled: stdout.supportsAnsiEscapes,
+        stdout: stdout,
+        stderr: stderr,
+      );
+      if (stdout.supportsAnsiEscapes) {
+        stdout.writeln('');
+        stdout.writeln(
+          '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+        stdout.writeln('${cyan.wrap('📖')} ${styleBold.wrap('Codemod Help')}');
+        stdout.writeln(
+          '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+        stdout.writeln('');
+      } else {
+        stdout.writeln('');
+        stdout.writeln(
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        );
+        stdout.writeln('📖 Codemod Help');
+        stdout.writeln(
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        );
+        stdout.writeln('');
+      }
+      terminal.section('Global Codemod Options');
+      stdout.writeln(codemodArgParser.usage);
 
       additionalHelpOutput ??= '';
       if (additionalHelpOutput.isNotEmpty) {
-        stderr.writeln();
-        stderr.writeln('Additional options for this codemod:');
-        stderr.writeln(additionalHelpOutput);
+        stdout.writeln('');
+        terminal.section('Additional Options');
+        stdout.writeln(additionalHelpOutput);
+      }
+      if (stdout.supportsAnsiEscapes) {
+        stdout.writeln('');
+        stdout.writeln(
+          '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+      } else {
+        stdout.writeln('');
+        stdout.writeln(
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        );
       }
       return ExitCode.success.code;
     }
@@ -217,14 +259,20 @@ Future<int> _runInteractiveCodemod(
       ),
     );
 
+    final terminal = TerminalOutput(
+      ansiEnabled: stdout.supportsAnsiEscapes,
+      stdout: stdout,
+      stderr: stderr,
+    );
+
     // Warn and exit early if there are no inputs.
     if (filePaths.isEmpty) {
-      logger.warning('codemod found no files');
+      terminal.warning('No files found to process');
       return ExitCode.success.code;
     }
 
     // Setup analysis for any suggestors that may need it.
-    logger.info('Setting up analysis contexts...');
+    terminal.progress('Setting up analysis contexts');
     final canonicalizedPaths = filePaths
         .map((path) => p.canonicalize(path))
         .toList();
@@ -234,12 +282,15 @@ Future<int> _runInteractiveCodemod(
     final fileContexts = canonicalizedPaths.map(
       (path) => FileContext(path, collection),
     );
-    logger.info('done');
+    terminal.clearProgress();
+    terminal.success(
+      'Analysis contexts ready (${canonicalizedPaths.length} file${canonicalizedPaths.length == 1 ? '' : 's'})',
+    );
 
     final skippedPatches = <Patch>[];
     final stats = CodemodStats();
     stats.startTime = DateTime.now();
-    stdout.writeln('searching...');
+    terminal.info('Searching for changes...');
 
     for (final suggestor in suggestors) {
       for (final context in fileContexts) {
@@ -264,7 +315,10 @@ Future<int> _runInteractiveCodemod(
             if (patch.isNoop) {
               // Patch suggested, but without any changes. This is probably an
               // error in the suggestor implementation.
-              logger.severe('Empty patch suggested: $patch');
+              terminal.error('Empty patch suggested: $patch');
+              terminal.error(
+                'This is likely a bug in the suggestor implementation.',
+              );
               return ExitCode.software.code;
             }
 
@@ -276,28 +330,98 @@ Future<int> _runInteractiveCodemod(
             }
 
             stdout.write(terminalClear());
-            stdout.write(patch.renderRange());
-            stdout.writeln();
+
+            // Display file location with formatting
+            if (stdout.supportsAnsiEscapes) {
+              stdout.writeln('');
+              stdout.writeln(
+                '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+              );
+              stdout.writeln(
+                '${cyan.wrap('📄')} ${styleBold.wrap(patch.renderRange())}',
+              );
+              stdout.writeln(
+                '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+              );
+              stdout.writeln('');
+            } else {
+              stdout.writeln('');
+              stdout.writeln(
+                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+              );
+              stdout.writeln('📄 ${patch.renderRange()}');
+              stdout.writeln(
+                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+              );
+              stdout.writeln('');
+            }
 
             final diffSize = calculateDiffSize(stdout);
             logger.fine('diff size: $diffSize');
-            stdout.write(patch.renderDiff(diffSize));
+            stdout.write(
+              patch.renderDiff(
+                diffSize,
+                ansiEnabled: stdout.supportsAnsiEscapes,
+              ),
+            );
             stdout.writeln();
 
             final defaultChoice = defaultYes ? 'y' : 'n';
             String choice;
             if (!yesToAll) {
-              if (defaultYes) {
+              stdout.writeln('');
+              if (stdout.supportsAnsiEscapes) {
                 stdout.writeln(
-                  'Accept change (y = yes [default], n = no, '
-                  'A = yes to all, q = quit)? ',
+                  '${styleDim.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
                 );
               } else {
                 stdout.writeln(
-                  'Accept change (y = yes, n = no [default], '
-                  'A = yes to all, q = quit)? ',
+                  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
                 );
               }
+              stdout.writeln('');
+              if (defaultYes) {
+                terminal.prompt('Accept this change?', defaultChoice: 'y');
+                if (stdout.supportsAnsiEscapes) {
+                  stdout.writeln('');
+                  stdout.writeln('  ${styleDim.wrap('Options:')}');
+                  stdout.writeln(
+                    '    ${green.wrap('y')} ${styleDim.wrap('= yes')} ${styleBold.wrap('[default]')}',
+                  );
+                  stdout.writeln(
+                    '    ${red.wrap('n')} ${styleDim.wrap('= no')}',
+                  );
+                  stdout.writeln(
+                    '    ${cyan.wrap('A')} ${styleDim.wrap('= yes to all')}',
+                  );
+                  stdout.writeln(
+                    '    ${yellow.wrap('q')} ${styleDim.wrap('= quit')}',
+                  );
+                } else {
+                  stdout.writeln('  (y)es [default]  (n)o  (A)ll  (q)uit');
+                }
+              } else {
+                terminal.prompt('Accept this change?', defaultChoice: 'n');
+                if (stdout.supportsAnsiEscapes) {
+                  stdout.writeln('');
+                  stdout.writeln('  ${styleDim.wrap('Options:')}');
+                  stdout.writeln(
+                    '    ${green.wrap('y')} ${styleDim.wrap('= yes')}',
+                  );
+                  stdout.writeln(
+                    '    ${red.wrap('n')} ${styleDim.wrap('= no')} ${styleBold.wrap('[default]')}',
+                  );
+                  stdout.writeln(
+                    '    ${cyan.wrap('A')} ${styleDim.wrap('= yes to all')}',
+                  );
+                  stdout.writeln(
+                    '    ${yellow.wrap('q')} ${styleDim.wrap('= quit')}',
+                  );
+                } else {
+                  stdout.writeln('  (y)es  (n)o [default]  (A)ll  (q)uit');
+                }
+              }
+              stdout.writeln('');
 
               choice = prompt('ynAq', defaultChoice);
             } else {
@@ -313,8 +437,18 @@ Future<int> _runInteractiveCodemod(
               logger.fine('patch accepted: $patch');
               appliedPatches.add(patch);
               stats.patchesApplied++;
+              if (stdout.supportsAnsiEscapes) {
+                stdout.writeln('');
+                terminal.success('✓ Change accepted');
+                stdout.writeln('');
+              }
             } else {
               stats.patchesSkipped++;
+              if (stdout.supportsAnsiEscapes) {
+                stdout.writeln('');
+                stdout.writeln('${styleDim.wrap('⊘ Change skipped')}');
+                stdout.writeln('');
+              }
             }
             if (choice == 'q') {
               logger.fine('applying patches');
@@ -356,6 +490,7 @@ Future<int> _runInteractiveCodemod(
           }
         } catch (e, stackTrace) {
           stats.errors++;
+          terminal.error('Error processing file: ${context.relativePath}');
           logger.severe(
             'Error processing file ${context.relativePath}: $e',
             e,
@@ -368,36 +503,156 @@ Future<int> _runInteractiveCodemod(
     stats.endTime = DateTime.now();
     logger.fine('done');
 
-    if (verbose) {
-      logger.info(stats.getSummary());
+    // Display summary
+    stdout.writeln('');
+    stdout.writeln('');
+    if (stdout.supportsAnsiEscapes) {
+      stdout.writeln(
+        '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+      );
+    } else {
+      stdout.writeln(
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      );
+    }
+    terminal.section('Summary');
+
+    terminal.keyValue(
+      'Files processed',
+      '${stats.filesProcessed}',
+      highlightValue: true,
+    );
+    terminal.keyValue(
+      'Files modified',
+      '${stats.filesModified}',
+      highlightValue: true,
+    );
+    terminal.keyValue('Patches suggested', '${stats.patchesSuggested}');
+    terminal.keyValue(
+      'Patches applied',
+      '${stats.patchesApplied}',
+      highlightValue: true,
+    );
+    terminal.keyValue('Patches skipped', '${stats.patchesSkipped}');
+    if (stats.patchesIgnored > 0) {
+      terminal.keyValue('Patches ignored', '${stats.patchesIgnored}');
+    }
+    if (stats.errors > 0) {
+      terminal.keyValue('Errors', '${stats.errors}', highlightValue: true);
+    }
+    if (stats.duration != null) {
+      final duration = stats.duration!;
+      final durationStr = duration.inSeconds < 60
+          ? '${duration.inSeconds}s'
+          : '${duration.inMinutes}m ${duration.inSeconds % 60}s';
+      terminal.keyValue('Duration', durationStr);
+    }
+    if (stdout.supportsAnsiEscapes) {
+      stdout.writeln('');
+      stdout.writeln(
+        '${cyan.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+      );
+    } else {
+      stdout.writeln('');
+      stdout.writeln(
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      );
     }
 
-    for (var patch in skippedPatches) {
-      stdout.writeln(
-        'NOTE: Overlapping patch was skipped. May require manual modification.',
-      );
-      stdout.writeln('      ${patch.toString()}');
-      stdout.writeln('      Updated text:');
-      stdout.writeln('      ${patch.updatedText}');
+    if (verbose) {
       stdout.writeln('');
+      terminal.section('Detailed Statistics');
+      stdout.writeln(stats.getSummary());
+    }
+
+    if (skippedPatches.isNotEmpty) {
+      stdout.writeln('');
+      terminal.note(
+        'Overlapping patches were skipped and may require manual modification:',
+      );
+      for (var patch in skippedPatches) {
+        terminal.listItem(patch.toString(), isError: false);
+        terminal.helpText('Updated text: ${patch.updatedText}');
+      }
     }
 
     if (failOnChanges) {
       if (numChanges > 0) {
-        stderr.writeln('$numChanges change(s) needed.');
+        stdout.writeln('');
+        if (stdout.supportsAnsiEscapes) {
+          stdout.writeln(
+            '${red.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+          );
+        } else {
+          stdout.writeln(
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+          );
+        }
+        terminal.error('$numChanges change(s) needed.');
 
         changesRequiredOutput ??= '';
         if (changesRequiredOutput.isNotEmpty) {
-          stderr.writeln();
-          stderr.writeln(changesRequiredOutput);
+          stdout.writeln('');
+          terminal.info(changesRequiredOutput);
+        }
+        if (stdout.supportsAnsiEscapes) {
+          stdout.writeln(
+            '${red.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+          );
+        } else {
+          stdout.writeln(
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+          );
         }
         return 1;
       }
-      stdout.writeln('No changes needed.');
+      stdout.writeln('');
+      terminal.success('✓ No changes needed.');
     }
 
     if (stats.errors > 0) {
+      stdout.writeln('');
+      if (stdout.supportsAnsiEscapes) {
+        stdout.writeln(
+          '${yellow.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+      } else {
+        stdout.writeln(
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        );
+      }
+      terminal.error('Completed with ${stats.errors} error(s)');
+      if (stdout.supportsAnsiEscapes) {
+        stdout.writeln(
+          '${yellow.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+        );
+      } else {
+        stdout.writeln(
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        );
+      }
       return ExitCode.software.code;
+    }
+
+    stdout.writeln('');
+    if (stdout.supportsAnsiEscapes) {
+      stdout.writeln(
+        '${green.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+      );
+    } else {
+      stdout.writeln(
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      );
+    }
+    terminal.success('✓ Codemod completed successfully!');
+    if (stdout.supportsAnsiEscapes) {
+      stdout.writeln(
+        '${green.wrap('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}',
+      );
+    } else {
+      stdout.writeln(
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      );
     }
     return ExitCode.success.code;
   } finally {

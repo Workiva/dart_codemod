@@ -74,7 +74,11 @@ class CodemodStats {
       buffer.writeln('  Errors: $errors');
     }
     if (duration != null) {
-      buffer.writeln('  Duration: ${duration!.inSeconds}s');
+      final d = duration!;
+      final durationStr = d.inSeconds < 60
+          ? '${d.inSeconds}s'
+          : '${d.inMinutes}m ${d.inSeconds % 60}s';
+      buffer.writeln('  Duration: $durationStr');
     }
     return buffer.toString();
   }
