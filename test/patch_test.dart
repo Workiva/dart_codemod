@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'package:io/ansi.dart';
 import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
@@ -95,12 +96,14 @@ void main() {
       expect(patch.startOffset, 10);
     });
 
-    test('endLine is the line after the line for the end of the sourceSpan',
-        () {
-      final span = sourceFile.span(10, 15);
-      final patch = SourcePatch(sourceFile, span, '');
-      expect(patch.endLine, 2);
-    });
+    test(
+      'endLine is the line after the line for the end of the sourceSpan',
+      () {
+        final span = sourceFile.span(10, 15);
+        final patch = SourcePatch(sourceFile, span, '');
+        expect(patch.endLine, 2);
+      },
+    );
 
     test('endLineOffset is one less than the offset for the endLine', () {
       final span = sourceFile.span(10, 15);
@@ -109,12 +112,13 @@ void main() {
     });
 
     test(
-        'endLineOffset is null if the sourceSpan reaches the end of the sourceFile',
-        () {
-      final span = sourceFile.span(10);
-      final patch = SourcePatch(sourceFile, span, '');
-      expect(patch.endLineOffset, isNull);
-    });
+      'endLineOffset is null if the sourceSpan reaches the end of the sourceFile',
+      () {
+        final span = sourceFile.span(10);
+        final patch = SourcePatch(sourceFile, span, '');
+        expect(patch.endLineOffset, isNull);
+      },
+    );
 
     test('endOffset is the offset of the end of the sourceSpan', () {
       final span = sourceFile.span(10, 15);
@@ -160,36 +164,40 @@ void main() {
         ]);
       });
 
-      testWithAnsi('represents a single-line replacement across multiple lines',
-          () {
-        // li>ne 2;
-        // l<ine 3;
-        final span = sourceFile.span(10, 17);
-        final patch = SourcePatch(sourceFile, span, 'REPLACED');
-        final diffLines = patch.renderDiff(1).split('\n');
-        expect(diffLines, [
-          '${mns}li${red.wrap('ne 2;')!}',
-          '$mns${red.wrap('l')!}ine 3;',
-          '${pls}li${green.wrap('REPLACED')!}ine 3;',
-          '',
-        ]);
-      });
+      testWithAnsi(
+        'represents a single-line replacement across multiple lines',
+        () {
+          // li>ne 2;
+          // l<ine 3;
+          final span = sourceFile.span(10, 17);
+          final patch = SourcePatch(sourceFile, span, 'REPLACED');
+          final diffLines = patch.renderDiff(1).split('\n');
+          expect(diffLines, [
+            '${mns}li${red.wrap('ne 2;')!}',
+            '$mns${red.wrap('l')!}ine 3;',
+            '${pls}li${green.wrap('REPLACED')!}ine 3;',
+            '',
+          ]);
+        },
+      );
 
-      testWithAnsi('represents a multi-line replacement across multiple lines',
-          () {
-        // li>ne 2;
-        // l<ine 3;
-        final span = sourceFile.span(10, 17);
-        final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
-        final diffLines = patch.renderDiff(1).split('\n');
-        expect(diffLines, [
-          '${mns}li${red.wrap('ne 2;')!}',
-          '$mns${red.wrap('l')!}ine 3;',
-          '${pls}li${green.wrap('REPLACED1')!}',
-          '$pls${green.wrap('REPLACED2')!}ine 3;',
-          '',
-        ]);
-      });
+      testWithAnsi(
+        'represents a multi-line replacement across multiple lines',
+        () {
+          // li>ne 2;
+          // l<ine 3;
+          final span = sourceFile.span(10, 17);
+          final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
+          final diffLines = patch.renderDiff(1).split('\n');
+          expect(diffLines, [
+            '${mns}li${red.wrap('ne 2;')!}',
+            '$mns${red.wrap('l')!}ine 3;',
+            '${pls}li${green.wrap('REPLACED1')!}',
+            '$pls${green.wrap('REPLACED2')!}ine 3;',
+            '',
+          ]);
+        },
+      );
 
       testWithAnsi('represents a multi-line replacement across one line', () {
         // li>ne< 2;
@@ -209,10 +217,7 @@ void main() {
         final span = sourceFile.span(10, 12);
         final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
-        expect(diffLines, [
-          '${mns}li${red.wrap('ne')!} 2;',
-          '',
-        ]);
+        expect(diffLines, ['${mns}li${red.wrap('ne')!} 2;', '']);
       });
 
       testWithAnsi('represents a multi-line deletion', () {
@@ -280,7 +285,9 @@ void main() {
         final span = sourceFile.span(10, 19);
         final patch = SourcePatch(sourceFile, span, '');
         expect(
-            patch.toString(), '<SourcePatch: on lib/foo.dart from 2:3 to 3:4>');
+          patch.toString(),
+          '<SourcePatch: on lib/foo.dart from 2:3 to 3:4>',
+        );
       });
 
       test('substitutes <unknown> if source file URL is missing', () {

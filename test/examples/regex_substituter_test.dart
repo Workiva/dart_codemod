@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'package:codemod/codemod.dart';
 import 'package:codemod/test.dart';
 import 'package:test/test.dart';
@@ -47,7 +48,10 @@ dependencies:
   codemod: ^1.0.0
 ''';
       expectSuggestorGeneratesPatches(
-          regexSubstituter, context, expectedOutput);
+        regexSubstituter,
+        context,
+        expectedOutput,
+      );
     });
   });
 }

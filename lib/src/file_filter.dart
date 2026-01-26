@@ -43,11 +43,13 @@ class FileFilterConfig {
   /// Creates a [FileFilterConfig] from a map (e.g., from YAML).
   factory FileFilterConfig.fromMap(Map<String, dynamic> map) {
     return FileFilterConfig(
-      includePatterns: (map['include'] as List<dynamic>?)
+      includePatterns:
+          (map['include'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
-      excludePatterns: (map['exclude'] as List<dynamic>?)
+      excludePatterns:
+          (map['exclude'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -64,12 +66,12 @@ class FileFilter {
   final List<Glob> _excludeGlobs;
 
   FileFilter(this._config)
-      : _includeGlobs = _config.includePatterns
-            .map((pattern) => Glob(pattern))
-            .toList(),
-        _excludeGlobs = _config.excludePatterns
-            .map((pattern) => Glob(pattern))
-            .toList();
+    : _includeGlobs = _config.includePatterns
+          .map((pattern) => Glob(pattern))
+          .toList(),
+      _excludeGlobs = _config.excludePatterns
+          .map((pattern) => Glob(pattern))
+          .toList();
 
   /// Checks if a file path should be included.
   bool shouldInclude(String filePath) {
@@ -86,7 +88,8 @@ class FileFilter {
     // Check Dart-specific hidden files
     if (_config.ignoreDartHidden) {
       final segments = p.split(normalizedPath);
-      if (segments.contains('.dart_tool') || p.basename(normalizedPath) == '.packages') {
+      if (segments.contains('.dart_tool') ||
+          p.basename(normalizedPath) == '.packages') {
         return false;
       }
     }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
@@ -78,15 +79,14 @@ Future<int> runInteractiveCodemod(
   bool defaultYes = false,
   String? additionalHelpOutput,
   String? changesRequiredOutput,
-}) =>
-    runInteractiveCodemodSequence(
-      filePaths,
-      [suggestor],
-      args: args,
-      defaultYes: defaultYes,
-      additionalHelpOutput: additionalHelpOutput,
-      changesRequiredOutput: changesRequiredOutput,
-    );
+}) => runInteractiveCodemodSequence(
+  filePaths,
+  [suggestor],
+  args: args,
+  defaultYes: defaultYes,
+  additionalHelpOutput: additionalHelpOutput,
+  changesRequiredOutput: changesRequiredOutput,
+);
 
 /// Exactly the same as [runInteractiveCodemod] except that it runs all of the
 /// given [suggestors] sequentially (meaning that the set of files found by
@@ -139,10 +139,15 @@ Future<int> runInteractiveCodemodSequence(
       return ExitCode.success.code;
     }
     return overrideAnsiOutput<Future<int>>(
-        stdout.supportsAnsiEscapes,
-        () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
-            defaultYes: defaultYes,
-            changesRequiredOutput: changesRequiredOutput));
+      stdout.supportsAnsiEscapes,
+      () => _runInteractiveCodemod(
+        filePaths,
+        suggestors,
+        parsedArgs,
+        defaultYes: defaultYes,
+        changesRequiredOutput: changesRequiredOutput,
+      ),
+    );
   } catch (error, stackTrace) {
     stderr
       ..writeln('Uncaught exception:')
@@ -168,13 +173,15 @@ final codemodArgParser = ArgParser()
   ..addFlag(
     'yes-to-all',
     negatable: false,
-    help: 'Forces all patches accepted without prompting the user. '
+    help:
+        'Forces all patches accepted without prompting the user. '
         'Useful for scripts.',
   )
   ..addFlag(
     'fail-on-changes',
     negatable: false,
-    help: 'Returns a non-zero exit code if there are changes to be made. '
+    help:
+        'Returns a non-zero exit code if there are changes to be made. '
         'Will not make any changes (i.e. this is a dry-run).',
   )
   ..addFlag(
@@ -183,9 +190,13 @@ final codemodArgParser = ArgParser()
     help: 'Forces ansi color highlighting of stderr. Useful for debugging.',
   );
 
-Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
-    Iterable<Suggestor> suggestors, ArgResults parsedArgs,
-    {bool? defaultYes, String? changesRequiredOutput}) async {
+Future<int> _runInteractiveCodemod(
+  Iterable<String> filePaths,
+  Iterable<Suggestor> suggestors,
+  ArgResults parsedArgs, {
+  bool? defaultYes,
+  String? changesRequiredOutput,
+}) async {
   final failOnChanges = (parsedArgs['fail-on-changes'] as bool?) ?? false;
   final stderrAssumeTty = (parsedArgs['stderr-assume-tty'] as bool?) ?? false;
   final verbose = (parsedArgs['verbose'] as bool?) ?? false;
@@ -195,103 +206,139 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
 
   // Pipe logs to stderr.
   Logger.root.level = verbose ? Level.ALL : Level.INFO;
-  Logger.root.onRecord.listen(logListener(
-    stderr,
-    ansiOutputEnabled: stderr.supportsAnsiEscapes || stderrAssumeTty == true,
-    verbose: verbose,
-  ));
+  StreamSubscription<LogRecord>? logSubscription;
+  try {
+    logSubscription = Logger.root.onRecord.listen(
+      logListener(
+        stderr,
+        ansiOutputEnabled:
+            stderr.supportsAnsiEscapes || stderrAssumeTty == true,
+        verbose: verbose,
+      ),
+    );
 
-  // Warn and exit early if there are no inputs.
-  if (filePaths.isEmpty) {
-    logger.warning('codemod found no files');
-    return ExitCode.success.code;
-  }
+    // Warn and exit early if there are no inputs.
+    if (filePaths.isEmpty) {
+      logger.warning('codemod found no files');
+      return ExitCode.success.code;
+    }
 
-  // Setup analysis for any suggestors that may need it.
-  logger.info('Setting up analysis contexts...');
-  final canonicalizedPaths =
-      filePaths.map((path) => p.canonicalize(path)).toList();
-  final collection =
-      AnalysisContextCollection(includedPaths: canonicalizedPaths);
-  final fileContexts =
-      canonicalizedPaths.map((path) => FileContext(path, collection));
-  logger.info('done');
+    // Setup analysis for any suggestors that may need it.
+    logger.info('Setting up analysis contexts...');
+    final canonicalizedPaths = filePaths
+        .map((path) => p.canonicalize(path))
+        .toList();
+    final collection = AnalysisContextCollection(
+      includedPaths: canonicalizedPaths,
+    );
+    final fileContexts = canonicalizedPaths.map(
+      (path) => FileContext(path, collection),
+    );
+    logger.info('done');
 
-  final skippedPatches = <Patch>[];
-  final stats = CodemodStats();
-  stats.startTime = DateTime.now();
-  stdout.writeln('searching...');
+    final skippedPatches = <Patch>[];
+    final stats = CodemodStats();
+    stats.startTime = DateTime.now();
+    stdout.writeln('searching...');
 
-  for (final suggestor in suggestors) {
-    for (final context in fileContexts) {
-      logger.fine('file: ${context.relativePath}');
-      stats.filesProcessed++;
-      final appliedPatches = <Patch>[];
-      try {
-        final patches = await suggestor(context)
-            .map((p) => SourcePatch.from(p, context.sourceFile))
-            .toList();
-        
-        stats.patchesSuggested += patches.length;
-        
-        // Filter out patches that should be ignored
-        final filteredPatches = filterIgnoredPatches(patches, context.sourceText);
-        stats.patchesIgnored += patches.length - filteredPatches.length;
-        
-        for (final patch in filteredPatches) {
-          if (patch.isNoop) {
-            // Patch suggested, but without any changes. This is probably an
-            // error in the suggestor implementation.
-            logger.severe('Empty patch suggested: $patch');
-            return ExitCode.software.code;
-          }
+    for (final suggestor in suggestors) {
+      for (final context in fileContexts) {
+        logger.fine('file: ${context.relativePath}');
+        stats.filesProcessed++;
+        final appliedPatches = <Patch>[];
+        try {
+          final patches = await suggestor(
+            context,
+          ).map((p) => SourcePatch.from(p, context.sourceFile)).toList();
 
-          if (failOnChanges) {
-            // In this mode, we only count the number of changes that would have
-            // been suggested instead of actually suggesting them.
-            numChanges++;
-            continue;
-          }
+          stats.patchesSuggested += patches.length;
 
-          stdout.write(terminalClear());
-          stdout.write(patch.renderRange());
-          stdout.writeln();
+          // Filter out patches that should be ignored
+          final filteredPatches = filterIgnoredPatches(
+            patches,
+            context.sourceText,
+          );
+          stats.patchesIgnored += patches.length - filteredPatches.length;
 
-          final diffSize = calculateDiffSize(stdout);
-          logger.fine('diff size: $diffSize');
-          stdout.write(patch.renderDiff(diffSize));
-          stdout.writeln();
-
-          final defaultChoice = defaultYes ? 'y' : 'n';
-          String choice;
-          if (!yesToAll) {
-            if (defaultYes) {
-              stdout.writeln('Accept change (y = yes [default], n = no, '
-                  'A = yes to all, q = quit)? ');
-            } else {
-              stdout.writeln('Accept change (y = yes, n = no [default], '
-                  'A = yes to all, q = quit)? ');
+          for (final patch in filteredPatches) {
+            if (patch.isNoop) {
+              // Patch suggested, but without any changes. This is probably an
+              // error in the suggestor implementation.
+              logger.severe('Empty patch suggested: $patch');
+              return ExitCode.software.code;
             }
 
-            choice = prompt('ynAq', defaultChoice);
-          } else {
-            logger.fine('skipped prompt because yesToAll==true');
-            choice = 'y';
+            if (failOnChanges) {
+              // In this mode, we only count the number of changes that would have
+              // been suggested instead of actually suggesting them.
+              numChanges++;
+              continue;
+            }
+
+            stdout.write(terminalClear());
+            stdout.write(patch.renderRange());
+            stdout.writeln();
+
+            final diffSize = calculateDiffSize(stdout);
+            logger.fine('diff size: $diffSize');
+            stdout.write(patch.renderDiff(diffSize));
+            stdout.writeln();
+
+            final defaultChoice = defaultYes ? 'y' : 'n';
+            String choice;
+            if (!yesToAll) {
+              if (defaultYes) {
+                stdout.writeln(
+                  'Accept change (y = yes [default], n = no, '
+                  'A = yes to all, q = quit)? ',
+                );
+              } else {
+                stdout.writeln(
+                  'Accept change (y = yes, n = no [default], '
+                  'A = yes to all, q = quit)? ',
+                );
+              }
+
+              choice = prompt('ynAq', defaultChoice);
+            } else {
+              logger.fine('skipped prompt because yesToAll==true');
+              choice = 'y';
+            }
+
+            if (choice == 'A') {
+              yesToAll = true;
+              choice = 'y';
+            }
+            if (choice == 'y') {
+              logger.fine('patch accepted: $patch');
+              appliedPatches.add(patch);
+              stats.patchesApplied++;
+            } else {
+              stats.patchesSkipped++;
+            }
+            if (choice == 'q') {
+              logger.fine('applying patches');
+              var userSkipped = promptToHandleOverlappingPatches(
+                appliedPatches,
+              );
+              // Store patch(es) to print info about skipped patches after codemodding.
+              skippedPatches.addAll(userSkipped);
+
+              // Don't apply the patches the user skipped.
+              for (var patch in userSkipped) {
+                appliedPatches.remove(patch);
+                logger.fine('skipping patch $patch');
+              }
+
+              applyPatchesAndSave(context.sourceFile, appliedPatches);
+              logger.fine('quitting');
+              return ExitCode.success.code;
+            }
           }
 
-          if (choice == 'A') {
-            yesToAll = true;
-            choice = 'y';
-          }
-          if (choice == 'y') {
-            logger.fine('patch accepted: $patch');
-            appliedPatches.add(patch);
-            stats.patchesApplied++;
-          } else {
-            stats.patchesSkipped++;
-          }
-          if (choice == 'q') {
+          if (!failOnChanges) {
             logger.fine('applying patches');
+
             var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
             // Store patch(es) to print info about skipped patches after codemodding.
             skippedPatches.addAll(userSkipped);
@@ -302,70 +349,59 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
               logger.fine('skipping patch $patch');
             }
 
-            applyPatchesAndSave(context.sourceFile, appliedPatches);
-            logger.fine('quitting');
-            return ExitCode.success.code;
+            if (appliedPatches.isNotEmpty) {
+              applyPatchesAndSave(context.sourceFile, appliedPatches);
+              stats.filesModified++;
+            }
           }
+        } catch (e, stackTrace) {
+          stats.errors++;
+          logger.severe(
+            'Error processing file ${context.relativePath}: $e',
+            e,
+            stackTrace,
+          );
+          // Continue with next file instead of failing completely
         }
-
-      if (!failOnChanges) {
-        logger.fine('applying patches');
-
-        var userSkipped = promptToHandleOverlappingPatches(appliedPatches);
-        // Store patch(es) to print info about skipped patches after codemodding.
-        skippedPatches.addAll(userSkipped);
-
-        // Don't apply the patches the user skipped.
-        for (var patch in userSkipped) {
-          appliedPatches.remove(patch);
-          logger.fine('skipping patch $patch');
-        }
-
-        if (appliedPatches.isNotEmpty) {
-          applyPatchesAndSave(context.sourceFile, appliedPatches);
-          stats.filesModified++;
-        }
-      }
-      } catch (e, stackTrace) {
-        stats.errors++;
-        logger.severe(
-            'Error processing file ${context.relativePath}: $e', e, stackTrace);
-        // Continue with next file instead of failing completely
       }
     }
-  }
-  stats.endTime = DateTime.now();
-  logger.fine('done');
-  
-  if (verbose) {
-    logger.info(stats.getSummary());
-  }
+    stats.endTime = DateTime.now();
+    logger.fine('done');
 
-  for (var patch in skippedPatches) {
-    stdout.writeln(
-        'NOTE: Overlapping patch was skipped. May require manual modification.');
-    stdout.writeln('      ${patch.toString()}');
-    stdout.writeln('      Updated text:');
-    stdout.writeln('      ${patch.updatedText}');
-    stdout.writeln('');
-  }
-
-  if (failOnChanges) {
-    if (numChanges > 0) {
-      stderr.writeln('$numChanges change(s) needed.');
-
-      changesRequiredOutput ??= '';
-      if (changesRequiredOutput.isNotEmpty) {
-        stderr.writeln();
-        stderr.writeln(changesRequiredOutput);
-      }
-      return 1;
+    if (verbose) {
+      logger.info(stats.getSummary());
     }
-    stdout.writeln('No changes needed.');
-  }
 
-  if (stats.errors > 0) {
-    return ExitCode.software.code;
+    for (var patch in skippedPatches) {
+      stdout.writeln(
+        'NOTE: Overlapping patch was skipped. May require manual modification.',
+      );
+      stdout.writeln('      ${patch.toString()}');
+      stdout.writeln('      Updated text:');
+      stdout.writeln('      ${patch.updatedText}');
+      stdout.writeln('');
+    }
+
+    if (failOnChanges) {
+      if (numChanges > 0) {
+        stderr.writeln('$numChanges change(s) needed.');
+
+        changesRequiredOutput ??= '';
+        if (changesRequiredOutput.isNotEmpty) {
+          stderr.writeln();
+          stderr.writeln(changesRequiredOutput);
+        }
+        return 1;
+      }
+      stdout.writeln('No changes needed.');
+    }
+
+    if (stats.errors > 0) {
+      return ExitCode.software.code;
+    }
+    return ExitCode.success.code;
+  } finally {
+    // Cancel subscription to prevent memory leak
+    await logSubscription?.cancel();
   }
-  return ExitCode.success.code;
 }

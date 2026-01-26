@@ -22,12 +22,16 @@ export 'src/util.dart' show applyPatches;
 ///       expectSuggestorGeneratesPatches(suggestor, context, expectedOutput);
 ///     });
 void expectSuggestorGeneratesPatches(
-    Suggestor suggestor, FileContext context, dynamic resultMatcher) {
+  Suggestor suggestor,
+  FileContext context,
+  dynamic resultMatcher,
+) {
   expect(
-      suggestor(context)
-          .toList()
-          .then((patches) => applyPatches(context.sourceFile, patches)),
-      completion(resultMatcher));
+    suggestor(
+      context,
+    ).toList().then((patches) => applyPatches(context.sourceFile, patches)),
+    completion(resultMatcher),
+  );
 }
 
 /// Creates a temporary file with the given [name] and [sourceText] using the
@@ -111,13 +115,13 @@ class PackageContextForTest {
   ]) async {
     dirName ??= 'package_${_packageCounter++}';
 
-    await d.dir(dirName, [
-      d.file('pubspec.yaml', pubspecContents),
-    ]).create();
+    await d.dir(dirName, [d.file('pubspec.yaml', pubspecContents)]).create();
 
     final root = p.canonicalize(d.path(dirName));
-    final pubGet =
-        Process.runSync('dart', ['pub', 'get'], workingDirectory: root);
+    final pubGet = Process.runSync('dart', [
+      'pub',
+      'get',
+    ], workingDirectory: root);
     if (pubGet.exitCode != 0) {
       printOnFailure('''
 PROCESS: dart pub get

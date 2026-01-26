@@ -24,7 +24,7 @@ import 'package:codemod/codemod.dart';
 Stream<Patch> addCommentBeforeFunction(FileContext context) async* {
   final text = context.sourceText;
   final pattern = RegExp(r'\bString\s+\w+\s*\(\)');
-  
+
   for (final match in pattern.allMatches(text)) {
     yield Patch('// Function found\n', match.start, match.start);
   }

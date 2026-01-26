@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -47,37 +48,43 @@ Future<Null> testCodemod(
   List<String>? stdinLines,
 }) async {
   test(description, () async {
-    final projectDir =
-        d.DirectoryDescriptor.fromFilesystem('project', _projectPath);
+    final projectDir = d.DirectoryDescriptor.fromFilesystem(
+      'project',
+      _projectPath,
+    );
     await projectDir.create();
 
     // The test project has a path dependency on this codemod package, but we
     // need to update it to be absolute so that it works from the temp dir.
     final pubspec = File(d.path('project/pubspec.yaml'));
-    pubspec.writeAsStringSync(pubspec
-        .readAsStringSync()
-        .replaceAll('path: ../../../', 'path: ${p.current}'));
-
-    final pubGetResult = await Process.run(
-      'dart',
-      ['pub', 'get'],
-      workingDirectory: projectDir.io.path,
+    pubspec.writeAsStringSync(
+      pubspec.readAsStringSync().replaceAll(
+        'path: ../../../',
+        'path: ${p.current}',
+      ),
     );
+
+    final pubGetResult = await Process.run('dart', [
+      'pub',
+      'get',
+    ], workingDirectory: projectDir.io.path);
     if (pubGetResult.exitCode != 0) {
-      fail('Failed to `pub get` in test fixture directory.\n'
-          'Pub get stderr:\n'
-          '${pubGetResult.stderr}');
+      fail(
+        'Failed to `pub get` in test fixture directory.\n'
+        'Pub get stderr:\n'
+        '${pubGetResult.stderr}',
+      );
     }
 
-    final processArgs = [
-      script ?? 'codemod.dart',
-      ...?args,
-    ];
+    final processArgs = [script ?? 'codemod.dart', ...?args];
     if (_debug) {
       processArgs.add('--verbose');
     }
-    final process = await Process.start('dart', processArgs,
-        workingDirectory: projectDir.io.path);
+    final process = await Process.start(
+      'dart',
+      processArgs,
+      workingDirectory: projectDir.io.path,
+    );
     (stdinLines ?? []).forEach(process.stdin.writeln);
     final codemodExitCode = await process.exitCode;
     expectedExitCode ??= 0;
@@ -85,10 +92,14 @@ Future<Null> testCodemod(
     final codemodStdout = await process.stdout.transform(utf8.decoder).join();
     final codemodStderr = await process.stderr.transform(utf8.decoder).join();
 
-    expect(codemodExitCode, expectedExitCode,
-        reason: 'Expected codemod to exit with code $expectedExitCode, but '
-            'it exited with $codemodExitCode.\n'
-            'Process stderr:\n$codemodStderr');
+    expect(
+      codemodExitCode,
+      expectedExitCode,
+      reason:
+          'Expected codemod to exit with code $expectedExitCode, but '
+          'it exited with $codemodExitCode.\n'
+          'Process stderr:\n$codemodStderr',
+    );
 
     if (_debug) {
       print('STDOUT:\n$codemodStdout\n\nSTDERR:\n$codemodStderr');
@@ -105,115 +116,162 @@ Future<Null> testCodemod(
 
 void main() {
   group('runInteractiveCodemod', () {
-    testCodemod('--help outputs usage help text', _afterNoPatches,
-        args: ['--help'], body: (out, err) {
-      expect(err,
-          contains('Global codemod options:\n\n${codemodArgParser.usage}'));
-    });
+    testCodemod(
+      '--help outputs usage help text',
+      _afterNoPatches,
+      args: ['--help'],
+      body: (out, err) {
+        expect(
+          err,
+          contains('Global codemod options:\n\n${codemodArgParser.usage}'),
+        );
+      },
+    );
 
     testCodemod(
-        '--help outputs additional help text if provided', _afterNoPatches,
-        script: 'codemod_help_output.dart', args: ['--help'], body: (out, err) {
-      expect(err, contains('additional help output'));
-    });
-
-    testCodemod('skips all patches via prompts', _afterNoPatches,
-        // 6 prompts (2 files, 3 each)
-        stdinLines: ['n', 'n', 'n', 'n', 'n', 'n']);
-
-    testCodemod('applies all patches via prompts', _afterAllPatches,
-        // 6 prompts (2 files, 3 each)
-        stdinLines: ['y', 'y', 'y', 'y', 'y', 'y']);
-
-    testCodemod('applies some patches via prompts', _afterSomePatches,
-        // 6 prompts (2 files, 3 each)
-        stdinLines: [
-          // File 1
-          'y', 'n', 'y',
-          // File 2
-          'n', 'y', 'n',
-        ]);
-
-    testCodemod('applies all patches via [enter] when defaultYes=true',
-        _afterAllPatches,
-        script: 'codemod_default_yes.dart',
-        // 6 prompts (2 files, 3 each)
-        // Empty string is equivalent to the user typing [enter]/[return]
-        stdinLines: ['', '', '', '', '', '']);
-
-    testCodemod('applies all patches via --yes-to-all', _afterAllPatches,
-        args: ['--yes-to-all']);
-
-    testCodemod('applies patches and then quits via prompts', _afterSomePatches,
-        // 6 prompts (2 files, 3 each)
-        stdinLines: [
-          // File 1
-          'y', 'n', 'y',
-          // File 2 - quits after skipping 1st, accepting 2nd; effectively skips
-          // the 3rd patch suggestion.
-          'n', 'y', 'q',
-        ]);
-
-    testCodemod('--fail-on-changes exits with 0 when no changes needed',
-        _afterNoPatches,
-        args: ['--fail-on-changes'],
-        script: 'codemod_no_patches.dart', body: (out, err) {
-      expect(out, contains('No changes needed.'));
-    });
-
-    testCodemod('--fail-on-changes exits with non-zero when changes needed',
-        _afterNoPatches,
-        args: ['--fail-on-changes'],
-        expectedExitCode: 1,
-        script: 'codemod.dart', body: (out, err) {
-      expect(err, contains('6 change(s) needed.'));
-    });
-
-    testCodemod('--fail-on-changes adds extra text to output when provided',
-        _afterNoPatches,
-        args: ['--fail-on-changes'],
-        expectedExitCode: 1,
-        script: 'codemod_changes_required_output.dart', body: (out, err) {
-      expect(err, contains('6 change(s) needed.\n\nchanges required output'));
-    });
+      '--help outputs additional help text if provided',
+      _afterNoPatches,
+      script: 'codemod_help_output.dart',
+      args: ['--help'],
+      body: (out, err) {
+        expect(err, contains('additional help output'));
+      },
+    );
 
     testCodemod(
-        'skips overlapping patches via prompts', _overlappingPatchesSkip,
-        expectedExitCode: 0,
-        stdinLines: ['y', 'y', 's', 'y', 'y', 's', 'n', 'n'],
-        script: 'codemod_overlapping_patches.dart', body: (out, err) {
-      final file1Path = p.canonicalize(d.path('project/file1.txt'));
-      final file2Path = p.canonicalize(d.path('project/file2.txt'));
-      expect(
+      'skips all patches via prompts',
+      _afterNoPatches,
+      // 6 prompts (2 files, 3 each)
+      stdinLines: ['n', 'n', 'n', 'n', 'n', 'n'],
+    );
+
+    testCodemod(
+      'applies all patches via prompts',
+      _afterAllPatches,
+      // 6 prompts (2 files, 3 each)
+      stdinLines: ['y', 'y', 'y', 'y', 'y', 'y'],
+    );
+
+    testCodemod(
+      'applies some patches via prompts',
+      _afterSomePatches,
+      // 6 prompts (2 files, 3 each)
+      stdinLines: [
+        // File 1
+        'y', 'n', 'y',
+        // File 2
+        'n', 'y', 'n',
+      ],
+    );
+
+    testCodemod(
+      'applies all patches via [enter] when defaultYes=true',
+      _afterAllPatches,
+      script: 'codemod_default_yes.dart',
+      // 6 prompts (2 files, 3 each)
+      // Empty string is equivalent to the user typing [enter]/[return]
+      stdinLines: ['', '', '', '', '', ''],
+    );
+
+    testCodemod(
+      'applies all patches via --yes-to-all',
+      _afterAllPatches,
+      args: ['--yes-to-all'],
+    );
+
+    testCodemod(
+      'applies patches and then quits via prompts',
+      _afterSomePatches,
+      // 6 prompts (2 files, 3 each)
+      stdinLines: [
+        // File 1
+        'y', 'n', 'y',
+        // File 2 - quits after skipping 1st, accepting 2nd; effectively skips
+        // the 3rd patch suggestion.
+        'n', 'y', 'q',
+      ],
+    );
+
+    testCodemod(
+      '--fail-on-changes exits with 0 when no changes needed',
+      _afterNoPatches,
+      args: ['--fail-on-changes'],
+      script: 'codemod_no_patches.dart',
+      body: (out, err) {
+        expect(out, contains('No changes needed.'));
+      },
+    );
+
+    testCodemod(
+      '--fail-on-changes exits with non-zero when changes needed',
+      _afterNoPatches,
+      args: ['--fail-on-changes'],
+      expectedExitCode: 1,
+      script: 'codemod.dart',
+      body: (out, err) {
+        expect(err, contains('6 change(s) needed.'));
+      },
+    );
+
+    testCodemod(
+      '--fail-on-changes adds extra text to output when provided',
+      _afterNoPatches,
+      args: ['--fail-on-changes'],
+      expectedExitCode: 1,
+      script: 'codemod_changes_required_output.dart',
+      body: (out, err) {
+        expect(err, contains('6 change(s) needed.\n\nchanges required output'));
+      },
+    );
+
+    testCodemod(
+      'skips overlapping patches via prompts',
+      _overlappingPatchesSkip,
+      expectedExitCode: 0,
+      stdinLines: ['y', 'y', 's', 'y', 'y', 's', 'n', 'n'],
+      script: 'codemod_overlapping_patches.dart',
+      body: (out, err) {
+        final file1Path = p.canonicalize(d.path('project/file1.txt'));
+        final file2Path = p.canonicalize(d.path('project/file2.txt'));
+        expect(
           out,
           contains(
-              'NOTE: Overlapping patch was skipped. May require manual modification.\n'
-              '      <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
-              '      Updated text:\n'
-              '      overlap\n'
-              '\n'
-              'NOTE: Overlapping patch was skipped. May require manual modification.\n'
-              '      <SourcePatch: on $file2Path from 1:2 to 1:4>\n'
-              '      Updated text:\n'
-              '      overlap\n'
-              '\n'));
-    });
+            'NOTE: Overlapping patch was skipped. May require manual modification.\n'
+            '      <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
+            '      Updated text:\n'
+            '      overlap\n'
+            '\n'
+            'NOTE: Overlapping patch was skipped. May require manual modification.\n'
+            '      <SourcePatch: on $file2Path from 1:2 to 1:4>\n'
+            '      Updated text:\n'
+            '      overlap\n'
+            '\n',
+          ),
+        );
+      },
+    );
 
     testCodemod(
-        'quits codemod via prompts when overlapping patches', _afterNoPatches,
-        expectedExitCode: 255,
-        stdinLines: ['y', 'y', 'q'],
-        script: 'codemod_overlapping_patches.dart', body: (out, err) {
-      final file1Path = p.canonicalize(d.path('project/file1.txt'));
-      expect(
+      'quits codemod via prompts when overlapping patches',
+      _afterNoPatches,
+      expectedExitCode: 255,
+      stdinLines: ['y', 'y', 'q'],
+      script: 'codemod_overlapping_patches.dart',
+      body: (out, err) {
+        final file1Path = p.canonicalize(d.path('project/file1.txt'));
+        expect(
           err,
-          contains('Exception: Codemod terminated due to overlapping patch.\n'
-              'Previous patch:\n'
-              '  <SourcePatch: on $file1Path from 1:1 to 1:4>\n'
-              '  Updated text: dov\n'
-              'Overlapping patch:\n'
-              '  <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
-              '  Updated text: overlap\n'));
-    });
+          contains(
+            'Exception: Codemod terminated due to overlapping patch.\n'
+            'Previous patch:\n'
+            '  <SourcePatch: on $file1Path from 1:1 to 1:4>\n'
+            '  Updated text: dov\n'
+            'Overlapping patch:\n'
+            '  <SourcePatch: on $file1Path from 1:2 to 1:4>\n'
+            '  Updated text: overlap\n',
+          ),
+        );
+      },
+    );
   });
 }

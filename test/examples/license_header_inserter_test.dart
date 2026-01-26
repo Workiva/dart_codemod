@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'package:codemod/codemod.dart';
 import 'package:codemod/test.dart';
 import 'package:test/test.dart';
@@ -46,7 +47,10 @@ void main() {
       final context = await fileContextForTest('foo.dart', 'library foo;');
       final expectedOutput = '${licenseHeader}library foo;';
       expectSuggestorGeneratesPatches(
-          licenseHeaderInserter, context, expectedOutput);
+        licenseHeaderInserter,
+        context,
+        expectedOutput,
+      );
     });
   });
 }

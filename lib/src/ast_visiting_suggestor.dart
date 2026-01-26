@@ -52,8 +52,10 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
   /// The context helper for the file currently being visited.
   FileContext get context {
     if (_context != null) return _context!;
-    throw StateError('context accessed outside of a visiting context. '
-        'Ensure that your suggestor only accesses `this.context` inside an AST visitor method.');
+    throw StateError(
+      'context accessed outside of a visiting context. '
+      'Ensure that your suggestor only accesses `this.context` inside an AST visitor method.',
+    );
   }
 
   FileContext? _context;
@@ -66,23 +68,34 @@ mixin AstVisitingSuggestor<R> on AstVisitor<R> {
       var result = await context.getResolvedUnit();
       if (result == null) {
         _log.warning(
-            'Could not get resolved unit for "${context.relativePath}"');
+          'Could not get resolved unit for "${context.relativePath}"',
+        );
         return;
       }
       unit = result.unit;
     } else {
-      unit = context.getUnresolvedUnit();
+      try {
+        unit = context.getUnresolvedUnit();
+      } catch (e) {
+        _log.warning('Failed to parse "${context.relativePath}": $e');
+        return;
+      }
     }
 
     _patches.clear();
     _context = context;
-    unit.accept(this);
-    // Force the copying of this list, otherwise it would be a lazy iterable
-    // mapped to the field on this class that will change on the next call.
-    final patches = _patches.toList();
-    _context = null;
 
-    yield* Stream.fromIterable(patches);
+    try {
+      unit.accept(this);
+      // Force the copying of this list, otherwise it would be a lazy iterable
+      // mapped to the field on this class that will change on the next call.
+      final patches = _patches.toList();
+      yield* Stream.fromIterable(patches);
+    } finally {
+      // Always reset state, even if accept() throws
+      _context = null;
+      _patches.clear();
+    }
   }
 
   /// Whether the AST should be resolved for the file represented by [context].

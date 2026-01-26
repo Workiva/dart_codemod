@@ -21,6 +21,36 @@ import 'package:source_span/source_span.dart';
 import 'constants.dart';
 import 'patch.dart';
 
+/// Validates that patch offsets are within file bounds.
+///
+/// Throws [ArgumentError] if validation fails.
+void validatePatch(Patch patch, SourceFile sourceFile) {
+  if (patch.startOffset < 0) {
+    throw ArgumentError(
+      'Patch startOffset cannot be negative: ${patch.startOffset}',
+    );
+  }
+
+  if (patch.endOffset != null) {
+    if (patch.endOffset! < patch.startOffset) {
+      throw ArgumentError(
+        'Patch endOffset (${patch.endOffset}) must be >= startOffset (${patch.startOffset})',
+      );
+    }
+    if (patch.endOffset! > sourceFile.length) {
+      throw ArgumentError(
+        'Patch endOffset (${patch.endOffset}) exceeds file length (${sourceFile.length})',
+      );
+    }
+  }
+
+  if (patch.startOffset > sourceFile.length) {
+    throw ArgumentError(
+      'Patch startOffset (${patch.startOffset}) exceeds file length (${sourceFile.length})',
+    );
+  }
+}
+
 /// Returns the result of applying all of the [patches]
 /// (insertions/deletions/replacements) to the contents of [sourceFile].
 ///
@@ -30,17 +60,25 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
   final sortedPatches =
       patches.map((p) => SourcePatch.from(p, sourceFile)).toList()..sort();
 
+  // Validate all patches before applying
+  for (final patch in sortedPatches) {
+    validatePatch(patch, sourceFile);
+  }
+
   var lastEdgeOffset = 0;
-  late Patch prev;
+  Patch? prev;
   for (final patch in sortedPatches) {
     if (patch.startOffset < lastEdgeOffset) {
-      throw Exception('Codemod terminated due to overlapping patch.\n'
-          'Previous patch:\n'
-          '  $prev\n'
-          '  Updated text: ${prev.updatedText}\n'
-          'Overlapping patch:\n'
-          '  $patch\n'
-          '  Updated text: ${patch.updatedText}\n');
+      final prevInfo = prev != null
+          ? '  $prev\n  Updated text: ${prev.updatedText}\n'
+          : '  (first patch)\n';
+      throw Exception(
+        'Codemod terminated due to overlapping patch.\n'
+        'Previous patch:\n$prevInfo'
+        'Overlapping patch:\n'
+        '  $patch\n'
+        '  Updated text: ${patch.updatedText}\n',
+      );
     }
 
     // Write unmodified text from end of last patch to beginning of this patch
@@ -63,6 +101,9 @@ String applyPatches(SourceFile sourceFile, Iterable<Patch> patches) {
 /// Throws an [ArgumentError] if [sourceFile] has a null value for
 /// [SourceFile.url], as it is required to open the file and write the new
 /// contents.
+///
+/// Creates a backup of the original file before writing changes. If the write
+/// fails, the backup is restored automatically.
 void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
   if (patches.isEmpty) {
     return;
@@ -70,8 +111,47 @@ void applyPatchesAndSave(SourceFile sourceFile, Iterable<Patch> patches) {
   if (sourceFile.url == null) {
     throw ArgumentError('sourceFile.url cannot be null');
   }
+
+  final file = File.fromUri(sourceFile.url!);
   final updatedContents = applyPatches(sourceFile, patches);
-  File.fromUri(sourceFile.url!).writeAsStringSync(updatedContents);
+
+  // Create backup before writing
+  final backupPath = '${file.path}.codemod_backup';
+  File? backupFile;
+
+  try {
+    if (file.existsSync()) {
+      backupFile = file.copySync(backupPath);
+    }
+
+    // Write to temporary file first, then rename (atomic operation)
+    final tempPath = '${file.path}.codemod_temp';
+    final tempFile = File(tempPath);
+    tempFile.writeAsStringSync(updatedContents);
+
+    // Atomic rename
+    tempFile.renameSync(file.path);
+
+    // Delete backup on success
+    if (backupFile != null && backupFile.existsSync()) {
+      backupFile.deleteSync();
+    }
+  } catch (e) {
+    // Restore from backup if write failed
+    if (backupFile != null && backupFile.existsSync() && !file.existsSync()) {
+      backupFile.copySync(file.path);
+    }
+    // Clean up temp file if it exists
+    final tempFile = File('${file.path}.codemod_temp');
+    if (tempFile.existsSync()) {
+      tempFile.deleteSync();
+    }
+    // Clean up backup
+    if (backupFile != null && backupFile.existsSync()) {
+      backupFile.deleteSync();
+    }
+    rethrow;
+  }
 }
 
 /// Finds overlapping patches and prompts the user to decide how to handle them.
@@ -83,24 +163,26 @@ List<Patch> promptToHandleOverlappingPatches(Iterable<Patch> patches) {
   final sortedPatches = patches.toList()..sort();
 
   int? lastEdgeOffset = 0;
-  late Patch prev;
+  Patch? prev;
   for (final patch in sortedPatches) {
     // If lastEdgeOffset is null, then the previous patch had no end offset,
     // which means it implicitly extends to the end of file. In that case, any
     // subsequent patch will overlap. Otherwise we just check if the next patch
     // starts before the previous one ended.
     if (lastEdgeOffset == null || patch.startOffset < lastEdgeOffset) {
+      final prevInfo = prev != null
+          ? '  $prev\n  Updated text: ${prev.updatedText}\n'
+          : '  (first patch)\n';
       stdout.writeln(
-          'A patch that overlaps with a previous patch applied was found. '
-          'Do you want to skip this patch, or quit the codemod?\n'
-          'Previous patch:\n'
-          '  $prev\n'
-          '  Updated text: ${prev.updatedText}\n'
-          'Overlapping patch:\n'
-          '  $patch\n'
-          '  Updated text: ${patch.updatedText}\n'
-          '(s = skip this patch and apply the rest [default],\n'
-          'q = quit)');
+        'A patch that overlaps with a previous patch applied was found. '
+        'Do you want to skip this patch, or quit the codemod?\n'
+        'Previous patch:\n$prevInfo'
+        'Overlapping patch:\n'
+        '  $patch\n'
+        '  Updated text: ${patch.updatedText}\n'
+        '(s = skip this patch and apply the rest [default],\n'
+        'q = quit)',
+      );
 
       var choice = prompt('sq', 's');
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'logging.dart';
 import 'patch.dart';
 
 /// Pattern that matches ignore comments in Dart code.
@@ -56,13 +57,21 @@ bool shouldIgnorePatch(SourcePatch patch, String sourceText) {
       final prevLineEndOffset = startLine < totalLines
           ? sourceFile.getOffset(startLine)
           : sourceFile.length;
-      final prevLineText = sourceFile.getText(prevLineOffset, prevLineEndOffset);
+      final prevLineText = sourceFile.getText(
+        prevLineOffset,
+        prevLineEndOffset,
+      );
 
       if (_ignoreCommentPattern.hasMatch(prevLineText)) {
         return true;
       }
     } catch (e) {
-      // If we can't get the previous line, continue checking
+      // Log for debugging but don't fail
+      // This is not critical - we'll check other locations
+      logger.fine(
+        'Could not check ignore comment on line ${startLine - 1} for '
+        '${patch.sourceFile.url?.path}: $e',
+      );
     }
   }
 
@@ -73,14 +82,21 @@ bool shouldIgnorePatch(SourcePatch patch, String sourceText) {
       final startLineEndOffset = startLine + 1 < totalLines
           ? sourceFile.getOffset(startLine + 1)
           : sourceFile.length;
-      final startLineText =
-          sourceFile.getText(startLineOffset, startLineEndOffset);
+      final startLineText = sourceFile.getText(
+        startLineOffset,
+        startLineEndOffset,
+      );
 
       if (_ignoreCommentPattern.hasMatch(startLineText)) {
         return true;
       }
     } catch (e) {
-      // If we can't get the line, continue checking
+      // Log for debugging but don't fail
+      // This is not critical - we'll check other locations
+      logger.fine(
+        'Could not check ignore comment on line $startLine for '
+        '${patch.sourceFile.url?.path}: $e',
+      );
     }
   }
 
@@ -96,7 +112,8 @@ bool shouldIgnorePatch(SourcePatch patch, String sourceText) {
     final afterIgnoreStart = sourceText.substring(lastIgnoreStart.end);
     final firstIgnoreEnd = _ignoreEndPattern.firstMatch(afterIgnoreStart);
 
-    if (firstIgnoreEnd == null || firstIgnoreEnd.start + lastIgnoreStart.end > patchStartOffset) {
+    if (firstIgnoreEnd == null ||
+        firstIgnoreEnd.start + lastIgnoreStart.end > patchStartOffset) {
       // The patch is within an ignore block
       return true;
     }
@@ -112,5 +129,7 @@ List<SourcePatch> filterIgnoredPatches(
   List<SourcePatch> patches,
   String sourceText,
 ) {
-  return patches.where((patch) => !shouldIgnorePatch(patch, sourceText)).toList();
+  return patches
+      .where((patch) => !shouldIgnorePatch(patch, sourceText))
+      .toList();
 }

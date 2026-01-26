@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'dart:io';
 
 import 'package:mocktail/mocktail.dart';
@@ -123,8 +124,9 @@ line 5;''');
 
       test('throws if any two patches overlap', () {
         expect(
-            () => applyPatches(sourceFile, [replacement, overlapsReplacement]),
-            throwsException);
+          () => applyPatches(sourceFile, [replacement, overlapsReplacement]),
+          throwsException,
+        );
       });
     });
 

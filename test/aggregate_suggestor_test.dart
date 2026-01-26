@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'package:codemod/codemod.dart';
 import 'package:codemod/test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -42,6 +43,8 @@ void main() {
     final suggestor = aggregate([fooSuggestor, barSuggestor]);
     final context = await fileContextForTest('test.dart', 'test');
     expect(
-        suggestor(context), emitsInOrder([isA<FooPatch>(), isA<BarPatch>()]));
+      suggestor(context),
+      emitsInOrder([isA<FooPatch>(), isA<BarPatch>()]),
+    );
   });
 }

@@ -49,9 +49,10 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
 
 void main() {
   group('Examples: IsEvenOrOddSuggestor', () {
-    test('changes modulus to isEven and isOdd only for an int receiver',
-        () async {
-      final context = await fileContextForTest('test.dart', '''
+    test(
+      'changes modulus to isEven and isOdd only for an int receiver',
+      () async {
+        final context = await fileContextForTest('test.dart', '''
 // Change to isEven
 var foo = (250 + 2) % 2 == 0;
 
@@ -61,7 +62,7 @@ var bar = (250 + 2) % 2 == 1;
 // No changes, not int modulus
 var baz = 25.0 % 2 == 0;
 ''');
-      final expectedOutput = '''
+        final expectedOutput = '''
 // Change to isEven
 var foo = (250 + 2).isEven;
 
@@ -71,8 +72,12 @@ var bar = (250 + 2).isOdd;
 // No changes, not int modulus
 var baz = 25.0 % 2 == 0;
 ''';
-      expectSuggestorGeneratesPatches(
-          IsEvenOrOddSuggestor().call, context, expectedOutput);
-    });
+        expectSuggestorGeneratesPatches(
+          IsEvenOrOddSuggestor().call,
+          context,
+          expectedOutput,
+        );
+      },
+    );
   });
 }

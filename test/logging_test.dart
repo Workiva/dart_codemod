@@ -14,6 +14,7 @@
 
 @TestOn('vm')
 library;
+
 import 'package:io/ansi.dart';
 import 'package:logging/logging.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -37,43 +38,30 @@ void main() {
     test('writes logs', () {
       final listener = logListener(output, ansiOutputEnabled: false);
       listener(LogRecord(Level.INFO, 'test', otherLoggerName));
-      expect(output.toString().split('\n'), [
-        '[INFO] other: test',
-        '',
-      ]);
+      expect(output.toString().split('\n'), ['[INFO] other: test', '']);
     });
 
     test('filters out the `codemod` logger name', () {
       final listener = logListener(output, ansiOutputEnabled: false);
       listener(LogRecord(Level.INFO, 'test', codemodLoggerName));
-      expect(output.toString().split('\n'), [
-        '[INFO] test',
-        '',
-      ]);
+      expect(output.toString().split('\n'), ['[INFO] test', '']);
     });
 
     test('includes errors', () {
       final listener = logListener(output, ansiOutputEnabled: false);
       final error = Exception('error');
       listener(LogRecord(Level.WARNING, 'test', codemodLoggerName, error));
-      expect(output.toString().split('\n'), [
-        '[WARNING] test',
-        '$error',
-        '',
-      ]);
+      expect(output.toString().split('\n'), ['[WARNING] test', '$error', '']);
     });
 
     test('omits stack traces by default', () {
       final listener = logListener(output, ansiOutputEnabled: false);
       final error = Exception('error');
       final stackTrace = StackTrace.current;
-      listener(LogRecord(
-          Level.WARNING, 'test', codemodLoggerName, error, stackTrace));
-      expect(output.toString().split('\n'), [
-        '[WARNING] test',
-        '$error',
-        '',
-      ]);
+      listener(
+        LogRecord(Level.WARNING, 'test', codemodLoggerName, error, stackTrace),
+      );
+      expect(output.toString().split('\n'), ['[WARNING] test', '$error', '']);
     });
 
     group('ansiOutputEnabled=true', () {
@@ -109,23 +97,33 @@ void main() {
 
     group('verbose=true', () {
       test('does not filter out the `codemod` logger name', () {
-        final listener =
-            logListener(output, ansiOutputEnabled: false, verbose: true);
+        final listener = logListener(
+          output,
+          ansiOutputEnabled: false,
+          verbose: true,
+        );
         listener(LogRecord(Level.INFO, 'test', codemodLoggerName));
-        expect(output.toString().split('\n'), [
-          '[INFO] codemod: test',
-          '',
-        ]);
+        expect(output.toString().split('\n'), ['[INFO] codemod: test', '']);
       });
 
       test('includes terse stack traces', () {
-        final listener =
-            logListener(output, ansiOutputEnabled: false, verbose: true);
+        final listener = logListener(
+          output,
+          ansiOutputEnabled: false,
+          verbose: true,
+        );
         final error = Exception('error');
         final stackTrace = StackTrace.current;
         final terseStackTrace = Trace.from(stackTrace).terse;
-        listener(LogRecord(
-            Level.WARNING, 'test', codemodLoggerName, error, stackTrace));
+        listener(
+          LogRecord(
+            Level.WARNING,
+            'test',
+            codemodLoggerName,
+            error,
+            stackTrace,
+          ),
+        );
         final result = output.toString();
         expect(result, contains('[WARNING] codemod: test\n'));
         expect(result, contains('$error\n'));

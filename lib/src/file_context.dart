@@ -26,8 +26,8 @@ class FileContext {
   final String root;
 
   FileContext(this.path, this._analysisContextCollection, {String? root})
-      : root = root ?? p.current,
-        relativePath = p.relative(path, from: root) {
+    : root = root ?? p.current,
+      relativePath = p.relative(path, from: root) {
     if (!p.isAbsolute(path)) {
       throw ArgumentError.value(path, 'path', 'must be absolute.');
     }
@@ -35,11 +35,30 @@ class FileContext {
 
   /// A representation of this file that makes it easy to reference spans of
   /// text, which is useful for the creation of [SourcePatch]es.
-  late final SourceFile sourceFile =
-      SourceFile.fromString(sourceText, url: Uri.file(path));
+  late final SourceFile sourceFile = SourceFile.fromString(
+    sourceText,
+    url: Uri.file(path),
+  );
 
   /// The contents of this file.
-  late final String sourceText = File(path).readAsStringSync();
+  late final String sourceText = _readFileSafely();
+
+  String _readFileSafely() {
+    final file = File(path);
+    if (!file.existsSync()) {
+      throw ArgumentError(
+        'File does not exist: $path (relative: $relativePath)',
+      );
+    }
+    try {
+      return file.readAsStringSync();
+    } on FileSystemException catch (e) {
+      throw ArgumentError(
+        'Failed to read file: $path (relative: $relativePath). '
+        'Error: ${e.message}',
+      );
+    }
+  }
 
   /// Uses the analyzer to resolve and return the library result for this file,
   /// which includes the [LibraryElement].
@@ -68,8 +87,11 @@ class FileContext {
   ///
   /// If the fully resolved AST is needed, use [getResolvedUnit].
   CompilationUnit getUnresolvedUnit() {
-    final result =
-        parseString(content: sourceText, path: path, throwIfDiagnostics: false);
+    final result = parseString(
+      content: sourceText,
+      path: path,
+      throwIfDiagnostics: false,
+    );
     if (result.errors.isEmpty) return result.unit;
 
     // Errors thrown by parseString don't include the filename, and result in
@@ -79,10 +101,13 @@ class FileContext {
     var buffer = StringBuffer();
     for (var error in result.errors) {
       var location = result.lineInfo.getLocation(error.offset);
-      buffer.writeln('  ${error.diagnosticCode.lowerCaseName}: ${error.message} - '
-          '${location.lineNumber}:${location.columnNumber}');
+      buffer.writeln(
+        '  ${error.diagnosticCode.lowerCaseName}: ${error.message} - '
+        '${location.lineNumber}:${location.columnNumber}',
+      );
     }
     throw ArgumentError(
-        'File "$relativePath" produced diagnostics when parsed:\n$buffer');
+      'File "$relativePath" produced diagnostics when parsed:\n$buffer',
+    );
   }
 }

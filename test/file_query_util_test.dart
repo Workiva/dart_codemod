@@ -13,6 +13,7 @@
 // limitations under the License.
 @TestOn('vm')
 library;
+
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -59,8 +60,10 @@ void main() {
 
     test('returns true when any path segment is ".dart_tool"', () {
       expect(isDartHiddenFile(File('foo/.dart_tool/baz')), isTrue); // relative
-      expect(isDartHiddenFile(File('/root/foo/.dart_tool/baz')),
-          isTrue); // absolute
+      expect(
+        isDartHiddenFile(File('/root/foo/.dart_tool/baz')),
+        isTrue,
+      ); // absolute
     });
 
     test('normalizes "." and ".." path segments', () {

@@ -1,2 +1,1 @@
-
 bool hasLicense() => false;

@@ -36,8 +36,8 @@ Function(LogRecord) logListener(
   bool? verbose,
 }) =>
     (record) => overrideAnsiOutput(ansiOutputEnabled == true, () {
-          _logListener(record, sink, verbose: verbose ?? false);
-        });
+      _logListener(record, sink, verbose: verbose ?? false);
+    });
 
 void _logListener(LogRecord record, StringSink sink, {required bool verbose}) {
   AnsiCode color;
@@ -52,8 +52,10 @@ void _logListener(LogRecord record, StringSink sink, {required bool verbose}) {
   var headerMessage = record.message;
   var blankLineCount = 0;
   if (headerMessage.startsWith('\n')) {
-    blankLineCount =
-        headerMessage.split('\n').takeWhile((line) => line.isEmpty).length;
+    blankLineCount = headerMessage
+        .split('\n')
+        .takeWhile((line) => line.isEmpty)
+        .length;
     headerMessage = headerMessage.substring(blankLineCount);
   }
   final header = '$level ${_loggerName(record, verbose)}$headerMessage';
@@ -78,9 +80,7 @@ void _logListener(LogRecord record, StringSink sink, {required bool verbose}) {
 /// Filter out the Logger names known to come from `codemod` and splits the
 /// header for levels >= WARNING.
 String _loggerName(LogRecord record, bool verbose) {
-  final knownNames = const [
-    'codemod',
-  ];
+  final knownNames = const ['codemod'];
   return verbose || !knownNames.contains(record.loggerName)
       ? '${record.loggerName}: '
       : '';

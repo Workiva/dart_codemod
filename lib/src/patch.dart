@@ -87,8 +87,11 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
   SourcePatch(this.sourceFile, this.sourceSpan, this.updatedText);
 
   SourcePatch.from(Patch patch, SourceFile sourceFile)
-      : this(sourceFile, sourceFile.span(patch.startOffset, patch.endOffset),
-            patch.updatedText);
+    : this(
+        sourceFile,
+        sourceFile.span(patch.startOffset, patch.endOffset),
+        patch.updatedText,
+      );
 
   @override
   int compareTo(SourcePatch other) => sourceSpan.compareTo(other.sourceSpan);
@@ -157,8 +160,9 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
   /// [numRowsToPrint] as the maximum) after rendering the patch diff.
   String renderDiff(int numRowsToPrint) {
     final sizeOfOld = endLine - startLine;
-    final sizeOfNew =
-        updatedText.isNotEmpty ? updatedText.split('\n').length : 0;
+    final sizeOfNew = updatedText.isNotEmpty
+        ? updatedText.split('\n').length
+        : 0;
     final sizeOfDiff = sizeOfOld + sizeOfNew;
     final sizeOfContext = math.max(0, numRowsToPrint - sizeOfDiff);
     final sizeOfUpContext = (sizeOfContext / 2).floor();
@@ -177,7 +181,9 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
       'startContextLineNumber': startContextLineNumber,
       'endContextLineNumber': endContextLineNumber,
     };
-    logger.fine('diff sizing:\n${diffSizingDebug.keys.map((k) => '\t$k: ${diffSizingDebug[k]}').join('\n')}');
+    logger.fine(
+      'diff sizing:\n${diffSizingDebug.keys.map((k) => '\t$k: ${diffSizingDebug[k]}').join('\n')}',
+    );
     logger.fine('old text:\n${sourceSpan.text}');
     logger.fine('new text:\n$updatedText');
 
@@ -189,9 +195,11 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
         : '';
 
     void writeFileLine(int lineNumber) {
-      buffer.writeln(lineNumber >= 0 && lineNumber < sourceFileLines.length
-          ? '  ${sourceFileLines[lineNumber]}'
-          : '~');
+      buffer.writeln(
+        lineNumber >= 0 && lineNumber < sourceFileLines.length
+            ? '  ${sourceFileLines[lineNumber]}'
+            : '~',
+      );
     }
 
     void writeDiffLines(List<String> lines, String linePrefix, AnsiCode color) {
@@ -233,7 +241,8 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
   }
 
   @override
-  String toString() => '<SourcePatch:'
+  String toString() =>
+      '<SourcePatch:'
       ' on ${sourceFile.url?.path ?? '<unknown>'}'
       ' from ${sourceSpan.start.line + 1}:${sourceSpan.start.column + 1}'
       ' to ${sourceSpan.end.line + 1}:${sourceSpan.end.column + 1}'

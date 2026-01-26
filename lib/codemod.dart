@@ -24,8 +24,7 @@ export 'src/file_query_util.dart'
         isNotHiddenFile,
         isDartHiddenFile,
         isNotDartHiddenFile;
-export 'src/ignore_util.dart'
-    show filterIgnoredPatches, shouldIgnorePatch;
+export 'src/ignore_util.dart' show filterIgnoredPatches, shouldIgnorePatch;
 export 'src/patch.dart' show Patch;
 export 'src/run_interactive_codemod.dart'
     show runInteractiveCodemod, runInteractiveCodemodSequence;

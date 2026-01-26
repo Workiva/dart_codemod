@@ -70,14 +70,15 @@ void main() {
       final suggestor = Simple();
       final context = await fileContextForTest('lib.dart', 'library lib;');
       expect(
-          suggestor(context),
-          emitsInOrder([
-            isA<Patch>()
-                .having((p) => p.startOffset, 'startOffset', 0)
-                .having((p) => p.endOffset, 'endOffset', 1)
-                .having((p) => p.updatedText, 'updatedText', 'foo'),
-            emitsDone,
-          ]));
+        suggestor(context),
+        emitsInOrder([
+          isA<Patch>()
+              .having((p) => p.startOffset, 'startOffset', 0)
+              .having((p) => p.endOffset, 'endOffset', 1)
+              .having((p) => p.updatedText, 'updatedText', 'foo'),
+          emitsDone,
+        ]),
+      );
     });
 
     test('should be able to be run multiple times', () async {
@@ -99,8 +100,7 @@ void main() {
       expect(await suggestor(context).toList(), hasLength(1));
     });
 
-    test(
-        'should scope patch generation such that it is not broken by '
+    test('should scope patch generation such that it is not broken by '
         'listening to streams out-of-order', () async {
       final suggestor = LibNameDoubler();
 
@@ -136,7 +136,10 @@ import 'package:meta/meta.dart';
 Never toss() { throw 'Thrown'; }
 ''';
       expectSuggestorGeneratesPatches(
-          AlwaysThrowsFixer().call, context, expectedOutput);
+        AlwaysThrowsFixer().call,
+        context,
+        expectedOutput,
+      );
     });
   });
 }
