@@ -37,9 +37,17 @@ final sourceFile = SourceFile.fromString(contents, url: sourceFileUrl);
 void main() {
   late String pls;
   late String mns;
+  late String boxTop;
+  late String boxSide;
+  late String boxBottom;
+  late String diffHeader;
   overrideAnsiOutput(true, () {
     pls = green.wrap('+ ')!;
     mns = red.wrap('- ')!;
+    boxTop = '${styleDim.wrap('┌─')} ${styleBold.wrap('Diff')}';
+    boxSide = styleDim.wrap('│')!;
+    boxBottom = styleDim.wrap('└─')!;
+    diffHeader = boxTop;
   });
 
   group('SourcePatch', () {
@@ -133,8 +141,10 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'ADDED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          '${mns}line 2;',
-          '${pls}li${green.wrap('ADDED')!}ne 2;',
+          diffHeader,
+          '$boxSide $mns ${red.wrap('line 2;')!}',
+          '$boxSide $pls ${green.wrap('liADDEDne 2;')!}',
+          boxBottom,
           '',
         ]);
       });
@@ -145,9 +155,11 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'ADDED1\nADDED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          '${mns}line 2;',
-          '${pls}li${green.wrap('ADDED1')!}',
-          '$pls${green.wrap('ADDED2')!}ne 2;',
+          diffHeader,
+          '$boxSide $mns ${red.wrap('line 2;')!}',
+          '$boxSide $pls ${green.wrap('liADDED1')!}',
+          '$boxSide $pls ${green.wrap('ADDED2ne 2;')!}',
+          boxBottom,
           '',
         ]);
       });
@@ -158,8 +170,10 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'REPLACED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          '${mns}li${red.wrap('ne')!} 2;',
-          '${pls}li${green.wrap('REPLACED')!} 2;',
+          diffHeader,
+          '$boxSide $mns ${red.wrap('line 2;')!}',
+          '$boxSide $pls ${green.wrap('liREPLACED 2;')!}',
+          boxBottom,
           '',
         ]);
       });
@@ -173,9 +187,11 @@ void main() {
           final patch = SourcePatch(sourceFile, span, 'REPLACED');
           final diffLines = patch.renderDiff(1).split('\n');
           expect(diffLines, [
-            '${mns}li${red.wrap('ne 2;')!}',
-            '$mns${red.wrap('l')!}ine 3;',
-            '${pls}li${green.wrap('REPLACED')!}ine 3;',
+            diffHeader,
+            '$boxSide $mns ${red.wrap('line 2;')!}',
+            '$boxSide $mns ${red.wrap('line 3;')!}',
+            '$boxSide $pls ${green.wrap('liREPLACEDine 3;')!}',
+            boxBottom,
             '',
           ]);
         },
@@ -190,10 +206,12 @@ void main() {
           final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
           final diffLines = patch.renderDiff(1).split('\n');
           expect(diffLines, [
-            '${mns}li${red.wrap('ne 2;')!}',
-            '$mns${red.wrap('l')!}ine 3;',
-            '${pls}li${green.wrap('REPLACED1')!}',
-            '$pls${green.wrap('REPLACED2')!}ine 3;',
+            diffHeader,
+            '$boxSide $mns ${red.wrap('line 2;')!}',
+            '$boxSide $mns ${red.wrap('line 3;')!}',
+            '$boxSide $pls ${green.wrap('liREPLACED1')!}',
+            '$boxSide $pls ${green.wrap('REPLACED2ine 3;')!}',
+            boxBottom,
             '',
           ]);
         },
@@ -205,9 +223,11 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          '${mns}li${red.wrap('ne')!} 2;',
-          '${pls}li${green.wrap('REPLACED1')!}',
-          '$pls${green.wrap('REPLACED2')!} 2;',
+          diffHeader,
+          '$boxSide $mns ${red.wrap('line 2;')!}',
+          '$boxSide $pls ${green.wrap('liREPLACED1')!}',
+          '$boxSide $pls ${green.wrap('REPLACED2 2;')!}',
+          boxBottom,
           '',
         ]);
       });
@@ -217,7 +237,12 @@ void main() {
         final span = sourceFile.span(10, 12);
         final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
-        expect(diffLines, ['${mns}li${red.wrap('ne')!} 2;', '']);
+        expect(diffLines, [
+          diffHeader,
+          '$boxSide $mns ${red.wrap('line 2;')!}',
+          boxBottom,
+          '',
+        ]);
       });
 
       testWithAnsi('represents a multi-line deletion', () {
@@ -227,8 +252,10 @@ void main() {
         final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          '${mns}li${red.wrap('ne 2;')!}',
-          '$mns${red.wrap('l')!}ine 3;',
+          diffHeader,
+          '$boxSide $mns ${red.wrap('line 2;')!}',
+          '$boxSide $mns ${red.wrap('line 3;')!}',
+          boxBottom,
           '',
         ]);
       });
@@ -244,18 +271,20 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'R1\nR2');
         final diffLines = patch.renderDiff(12).split('\n');
         expect(diffLines, [
-          '~',
-          '~',
-          '  line 1;',
-          '  line 2;',
-          '${mns}li${red.wrap('ne 3;')!}',
-          '$mns${red.wrap('l')!}ine 4;',
-          '${pls}li${green.wrap('R1')!}',
-          '$pls${green.wrap('R2')!}ine 4;',
-          '  line 5;',
-          '  line 6;',
-          '~',
-          '~',
+          diffHeader,
+          '$boxSide ~',
+          '$boxSide ~',
+          '$boxSide line 1;',
+          '$boxSide line 2;',
+          '$boxSide $mns ${red.wrap('line 3;')!}',
+          '$boxSide $mns ${red.wrap('line 4;')!}',
+          '$boxSide $pls ${green.wrap('liR1')!}',
+          '$boxSide $pls ${green.wrap('R2ine 4;')!}',
+          '$boxSide line 5;',
+          '$boxSide line 6;',
+          '$boxSide ~',
+          '$boxSide ~',
+          boxBottom,
           '',
         ]);
       });

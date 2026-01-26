@@ -6,10 +6,12 @@ void main(List<String> args) async {
   await run(args);
 }
 
-Future<void> run(List<String> args,
-    {bool defaultYes = false,
-    String? additionalHelpOutput,
-    String? changesRequiredOutput}) async {
+Future<void> run(
+  List<String> args, {
+  bool defaultYes = false,
+  String? additionalHelpOutput,
+  String? changesRequiredOutput,
+}) async {
   exitCode = await runInteractiveCodemod(
     ['file1.txt', 'file2.txt', 'skip.txt'],
     testSuggestor,

@@ -215,7 +215,7 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
 
     void writeDiffLines(List<String> lines, String linePrefix, AnsiCode color) {
       for (var i = 0; i < lines.length; i++) {
-        var line = color.wrap(lines[i])!;
+        var line = lines[i];
         if (i == 0) {
           line = patchPreContext + line;
         }

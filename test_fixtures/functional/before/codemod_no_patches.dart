@@ -5,6 +5,8 @@ import 'package:glob/glob.dart';
 
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
-      filePathsFromGlob(Glob('**')), (_) async* {},
-      args: args);
+    filePathsFromGlob(Glob('**')),
+    (_) async* {},
+    args: args,
+  );
 }
