@@ -3,499 +3,323 @@
 [![Pub](https://img.shields.io/pub/v/codemod.svg)](https://pub.dartlang.org/packages/codemod)
 [![Dart CI](https://github.com/Workiva/dart_codemod/workflows/Dart%20CI/badge.svg?branch=master)](https://github.com/Workiva/dart_codemod/actions?query=workflow%3A%22Dart+CI%22+branch%3Amaster)
 
-A library that makes it easy to write and run automated code modifications
-on a codebase. Primarily geared towards updating/refactoring Dart code by
-leveraging the [analyzer][analyzer] package's APIs for parsing and traversing
-the AST.
+A powerful library for writing and running automated code modifications on a codebase. Primarily geared towards updating and refactoring Dart code by leveraging the [analyzer][analyzer] package's APIs for parsing and traversing the AST.
 
 Inspired by and based on [Facebook's `codemod` library][facebook-codemod].
 
-## Demo
+## Features
 
-![demo](images/demo.gif)
+- 🚀 **Interactive CLI** - Review and approve changes before applying
+- 🔍 **AST-based transformations** - Robust code analysis and modification
+- 📝 **Regex-based suggestors** - Simple text pattern matching
+- 🎯 **Ignore mechanism** - Exclude specific code from transformations
+- 📊 **Statistics tracking** - Monitor execution metrics
+- 🔧 **File filtering** - Advanced include/exclude patterns
+- 🛡️ **Error recovery** - Graceful handling of errors
+- ✅ **CI/CD ready** - Dry-run mode and automated application
 
-## How It Works
+## Quick Start
 
-The end goal of this library is to enable you to easily and automatically
-apply code modifications and refactors via an interactive CLI. To that end,
-the following function is provided:
+### Installation
 
-```dart
-Future<int> runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
+Add to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  codemod: ^1.3.0
 ```
 
-Calling this will tell codemod run the `suggestor` on each file in `files`. For
-each file, the suggestor will return a stream of patches that should be
-suggested to the user. As patches are suggested and accepted by the user,
-codemod handles applying them to the files and writing the result to disk.
+```bash
+dart pub get
+```
 
-## Writing a Suggestor
+### Your First Codemod
+
+```dart
+import 'dart:io';
+import 'package:codemod/codemod.dart';
+import 'package:glob/glob.dart';
+
+Stream<Patch> addLicenseHeader(FileContext context) async* {
+  const header = '// Copyright 2025\n';
+  if (context.sourceText.startsWith(header)) return;
+  yield Patch(header, 0, 0);
+}
+
+void main(List<String> args) async {
+  exitCode = await runInteractiveCodemod(
+    filePathsFromGlob(Glob('lib/**/*.dart')),
+    addLicenseHeader,
+    args: args,
+  );
+}
+```
+
+Run it:
+
+```bash
+dart my_codemod.dart
+```
+
+## Documentation
+
+📚 **Comprehensive documentation is available in the [`docs/`](docs/) directory:**
+
+- **[Getting Started](docs/getting-started.md)** - Installation, setup, and first steps
+- **[API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Examples](docs/examples.md)** - AST and non-AST examples
+- **[AI/LLM Guide](docs/ai-guide.md)** - Instructions for AI assistants to generate codemods
+- **[Best Practices](docs/best-practices.md)** - Guidelines for writing effective codemods
+- **[Advanced Topics](docs/advanced-topics.md)** - Advanced features and techniques
+
+## Core Concepts
+
+### Suggestor
+
+A `Suggestor` is a function that takes a `FileContext` and returns a `Stream<Patch>`:
 
 ```dart
 typedef Suggestor = Stream<Patch> Function(FileContext context);
 ```
 
-Suggestor is just a typedef, so any function with that signature or class that
-overrides `call()` with that signature will work.
+### Patch
 
-Codemod creates the `FileContext` instance for each file path it is given and
-passes it to the suggestor; it is just a helper class with methods for reading
-the file's contents and analyzing it with [`package:analyzer`][analyzer].
-
-The context can be used to get the file's contents (`context.sourceText`), a
-`SourceFile` representation (`context.sourceFile`) for easily referencing spans
-of text within the file, or, for Dart files, the analyzed formats like the
-`CompilationUnit` (unresolved or resolved) or the fully resolved
-`LibraryElement`.
-
-### Suggestor Example: Insert License Headers
-
-The following suggestor checks each file for the expected license header, and if
-missing, yields a `Patch` that inserts it at the beginning of the file.
+A `Patch` represents a single change - insertion, deletion, or replacement:
 
 ```dart
-import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
+// Insertion
+yield Patch('new code', offset, offset);
 
-final String licenseHeader = '''
-// Lorem ispum license.
-// 2018-2019
-''';
+// Deletion
+yield Patch('', startOffset, endOffset);
 
-Stream<Patch> licenseHeaderInserter(FileContext context) async* {
-  // Skip if license header already exists.
-  if (context.sourceText.trimLeft().startsWith(licenseHeader)) return;
-
-  yield Patch(
-    // Text to insert.
-    licenseHeader,
-    // Start offset.
-    // 0 means "insert at the beginning of the file."
-    0,
-    // End offset.
-    // Using the same offset as the start offset here means that the patch
-    // is being inserted at this point instead of replacing a span of text.
-    0,
-  );
-}
+// Replacement
+yield Patch('new code', startOffset, endOffset);
 ```
 
-### Suggestor Example: Regex Substitution
+### FileContext
 
-Regex substitutions are also a common strategy for codemods and are sufficient
-for simple changes. The following suggestor updates a version constraint for the
-`codemod` package in a `pubspec.yaml`:
+Provides access to file contents and analyzed formats:
 
 ```dart
-import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
+// Get source text
+final text = context.sourceText;
 
-/// Pattern that matches a dependency version constraint line for the `codemod`
-/// package, with the first capture group being the constraint.
-final RegExp pattern = RegExp(
-  r'''^\s*codemod:\s*([\d\s"'<>=^.]+)\s*$''',
-  multiLine: true,
-);
+// Get unresolved AST (fast)
+final unit = context.getUnresolvedUnit();
 
-/// The version constraint that `codemod` entries should be updated to.
-const String targetConstraint = '^1.0.0';
+// Get resolved AST (slower, includes types)
+final resolved = await context.getResolvedUnit();
+```
 
-Stream<Patch> regexSubstituter(FileContext context) async* {
+## Examples
+
+### Non-AST: Regex Substitution
+
+```dart
+Stream<Patch> updateVersion(FileContext context) async* {
+  final pattern = RegExp(r'codemod:\s*([\d^.]+)');
   for (final match in pattern.allMatches(context.sourceText)) {
-    final line = match.group(0);
-    final constraint = match.group(1);
-    final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
-
-    yield Patch(updated, match.start, match.end);
+    yield Patch('codemod: ^1.3.0', match.start, match.end);
   }
 }
 ```
 
-### Suggestor Example: AST Visitor
-
-Regexes and custom parsing can get you pretty far, but using the
-[analyzer][analyzer]'s visitor pattern to traverse the parsed AST is a much more
-robust option and allows for the creation of very powerful codemods with
-relatively little effort.
-
-Consider the following suggestor that removes all deprecated declarations
-(i.e. classes, constructors, variables, methods, etc.):
+### AST-Based: Remove Deprecated Code
 
 ```dart
-import 'package:analyzer/analyzer.dart';
-import 'package:codemod/codemod.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 
 class DeprecatedRemover extends GeneralizingAstVisitor<void>
     with AstVisitingSuggestor {
-  static bool isDeprecated(AnnotatedNode node) =>
-      node.metadata.any((m) => m.name.name.toLowerCase() == 'deprecated');
-
   @override
   void visitDeclaration(Declaration node) {
-    if (isDeprecated(node)) {
-      // Remove the node by replacing the span from its start offset to its end
-      // offset with an empty string.
+    final isDeprecated = node.metadata.any((m) => 
+      m.name.name.toLowerCase() == 'deprecated');
+    if (isDeprecated) {
       yieldPatch('', node.offset, node.end);
     }
+    super.visitDeclaration(node);
   }
 }
 ```
 
-In this example, the suggestor extends the `GeneralizingAstVisitor` which allows
-it to target all nodes that could be deprecated with a single visit method. Then
-it's just a matter of checking for either the `@Deprecated()` or `@deprecated()`
-annotation and yielding a patch with an empty string across the entire node,
-which is effectively a deletion.
+See [Examples](docs/examples.md) for more patterns.
 
-You may notice that in this example, the suggestor is no longer implementing
-`generatePatches()` – instead, we use `AstVisitingSuggestor`. This mixin handles
-obtaining the `CompilationUnit` for the given file and starting the visitor
-pattern so that all you have to do is override the applicable `visit` methods.
+## Command Line Options
 
-Although the `GeneralizingAstVisitor` was the appropriate choice for this
-suggestor, any `AstVisitor` will work. Choose whichever one fits the job.
+- `-h, --help` - Print help output
+- `-v, --verbose` - Output all logging and statistics
+- `--yes-to-all` - Accept all patches automatically (for scripts)
+- `--fail-on-changes` - Exit with non-zero if changes needed (dry-run)
+- `--stderr-assume-tty` - Force ANSI colors in stderr
 
-Note that by default `AstVisitingSuggestor` operates on a Dart file's
-_unresolved_ AST, but you can override `shouldResolveAst()` to tell the mixin to
-resolve the AST:
+### Usage Examples
 
-```dart
-class ExampleSuggestor extends GeneralizingAstVisitor
-    with AstVisitingSuggestor {
-  @override
-  bool shouldResolveAst(FileContext context) => true;
+```bash
+# Interactive mode (default)
+dart my_codemod.dart
 
-  ...
-}
+# Dry run - check what would change
+dart my_codemod.dart --fail-on-changes
+
+# Automated - apply all changes
+dart my_codemod.dart --yes-to-all
+
+# Verbose - see detailed logs and statistics
+dart my_codemod.dart --verbose
 ```
 
-> If you're not familiar with the analyzer API, in particular the `AstNode`
-> class hierarchy and the `AstVisitor` pattern, it may be a good opportunity to
-> browse the analyzer source code or look at the AST visiting suggestor codemods
-> that are linked below in the [references section](#references) to see what is
-> possible with this approach.
+## Ignore Mechanism
 
-## Running a Codemod
-
-All you need to run a codemod is:
-
-1. A set of files to be read.
-
-    You can create this `Iterable<String>` input however you like. An easy
-    option is to use `Glob` from `package:glob` with the `filePathsFromGlob()`
-    util method from this package. Globs make it easy to query for files
-    recursively, and `filePathsFromGlob()` will filter out hidden files by
-    default:
-
-    ```dart
-    filePathsFromGlob(Glob('**.dart', recursive: true))
-    ```
-
-2. A `Suggestor` to suggest patches on each file.
-
-3. A `.dart` file with a `main()` block that calls `runInteractiveCodemod()`.
-
-If we were to run the 3 suggestor examples from above, it would like like so:
-
-**Regex Substituter:**
-
-```dart
-import 'dart:io';
-import 'package:codemod/codemod.dart';
-
-void main(List<String> args) async {
-  exitCode = await runInteractiveCodemod(
-    ['pubspec.yaml'],
-    regexSubstituter,
-    args: args,
-  );
-}
-```
-
-**License Header Inserter:**
-
-```dart
-import 'dart:io';
-
-import 'package:codemod/codemod.dart';
-import 'package:glob/glob.dart';
-
-void main(List<String> args) async {
-  exitCode = await runInteractiveCodemod(
-    filePathsFromGlob(Glob('**.dart', recursive: true)),
-    licenseHeaderInserter,
-    args: args,
-  );
-}
-```
-
-**Deprecated Remover:**
-
-```dart
-import 'dart:io';
-
-import 'package:codemod/codemod.dart';
-import 'package:glob/glob.dart';
-
-void main(List<String> args) async {
-  exitCode = await runInteractiveCodemod(
-    filePathsFromGlob(Glob('**.dart', recursive: true)),
-    DeprecatedRemover(),
-    args: args,
-  );
-}
-```
-
-Run the `.dart` file directly or package it up as an executable and publish it
-to pub!
-
-## Additional Options
-
-To facilitate the creation of more complex codemods, two additional pieces are
-provided by this library:
-
-- Aggregate multiple suggestors into a single suggestor with `aggregate()`:
-
-    ```dart
-    import 'dart:io';
-
-    import 'package:codemod/codemod.dart';
-
-    void main(List<String> args) async {
-      exitCode = await runInteractiveCodemod(
-        [...], // input files
-        aggregate([
-          suggestorA,
-          suggestorB,
-        ]),
-      );
-    }
-    ```
-
-- Run multiple suggestors (or aggregate suggestors) sequentially:
-
-    ```dart
-    import 'dart:io';
-
-    import 'package:codemod/codemod.dart';
-
-    void main(List<String> args) async {
-      exitCode = await runInteractiveCodemodSequence(
-        [...], // input files
-        [
-          phaseOneSuggestor,
-          phaseTwoSuggestor,
-        ],
-        args: args,
-      );
-    }
-    ```
-
-    This can be useful if a certain modification needs to happen prior to
-    another, or if you need to use a "collector" pattern wherein the first
-    suggestor collects information from the files that a second suggestor will
-    then use to suggest patches.
-
-## Testing Suggestors
-
-Testing suggestors is relatively easy for two reasons:
-
-- The API surface area is small (most of the time you only need to test the
-  suggestor function).
-
-- The stream of patches returned by a suggestor can be applied to the source
-  file to obtain a `String` output, which can easily be compared against an
-  expected output.
-
-In other words, all you need to do is determine a sufficient set of inputs and
-their respective expected outputs.
-
-To help out, the `package:codemod/test.dart` library exports a few functions.
-These two should be sufficient for writing most suggestor tests:
-
-- `fileContextForTest(name, contents)` for creating a `FileContext` that can be
-used as the input for `Suggestor.generatePatches()`
-- `expectSuggestorGeneratesPatches(suggestor, context, resultMatcher)` for
-asserting that a suggestor produces the expected result for a given input
-
-If, however, you need to examine the generated patches more closely, you can
-call a suggestor yourself and then use the `applyPatches(sourceFile, patches)`
-function to get the resulting output.
-
-Let's use the `DeprecatedRemover` suggestor example from above to demonstrate
-testing:
-
-```dart
-import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
-import 'package:test/test.dart';
-
-void main() {
-  group('DeprecatedRemover', () {
-    test('removes deprecated variable', () async {
-      final context = await fileContextForTest('test.dart', '''
-// Not deprecated.
-var foo = 'foo';
-@deprecated
-var bar = 'bar';''');
-      final expectedOutput = '''
-// Not deprecated.
-var foo = 'foo';
-''';
-      expectSuggestorGeneratesPatches(
-          DeprecatedRemover(), context, expectedOutput);
-    });
-  });
-}
-```
-
-### Testing Suggestors with Resolved AST
-
-The `fileContextForTest()` helper shown above makes it easy to test suggestors
-that operate on the _unresolved_ AST, but some suggestors require the _resolved_
-AST. For example, a suggestor may need to rename a specific symbol from a specific
-package, and so it would need to check the resolved element of a node. This is
-only possible if the analysis context is aware of all the relevant files and
-package dependencies.
-
-To help with this scenario, the `package:codemod/test.dart` library also exports
-a `PackageContextForTest` helper class. This class handles creating a temporary
-package directory, installing dependencies, and setting up an analysis context
-that has access to the whole package and its dependencies. You can then add
-source file(s) and use the wrapping `FileContext`s to test suggestors.
-
-```dart
-import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
-import 'package:test/test.dart';
-
-void main() {
-  group('AlwaysThrowsFixer', () {
-    test('returns Never instead', () async {
-      final pkg = await PackageContextForTest.fromPubspec('''
-name: pkg
-publish_to: none
-environment:
-  sdk: '>=3.0.0 <4.0.0'
-dependencies:
-  meta: ^1.0.0
-''');
-      final context = await pkg.addFile('''
-import 'package:meta/meta.dart';
-@alwaysThrows toss() { throw 'Thrown'; }
-''');
-      final expectedOutput = '''
-import 'package:meta/meta.dart';
-Never toss() { throw 'Thrown'; }
-''';
-      expectSuggestorGeneratesPatches(
-          AlwaysThrowsFixer(), context, expectedOutput);
-    });
-  });
-}
-```
-
-## Ignoring Patches
-
-Sometimes you may want to exclude specific lines or blocks of code from codemod
-suggestions. You can use ignore comments to achieve this:
-
-### Single Line Ignore
-
-Place `// codemod_ignore` or `// codemod_ignore: <reason>` on the line before
-the code you want to ignore:
+Exclude code from transformations using comments:
 
 ```dart
 // codemod_ignore
-var deprecatedVariable = 'value';
-
-// codemod_ignore: This is a special case
-function specialFunction() {
-  // ...
+void specialFunction() {
+  // This will be skipped
 }
-```
 
-### Block Ignore
-
-Use `// codemod_ignore_start` and `// codemod_ignore_end` to ignore a block of
-code:
-
-```dart
 // codemod_ignore_start
-function example1() {
-  // This function will be ignored
-}
-
-function example2() {
-  // This function will also be ignored
-}
+void function1() { }
+void function2() { }
 // codemod_ignore_end
 ```
 
-Both `//` and `/* */` comment styles are supported.
-
-## Statistics and Metrics
-
-When running in verbose mode (`--verbose`), codemod will output execution
-statistics including:
-
-- Files processed and modified
-- Patches suggested, applied, skipped, and ignored
-- Errors encountered
-- Execution duration
-
-Example output:
-
-```
-Codemod Statistics:
-  Files processed: 42
-  Files modified: 15
-  Patches suggested: 38
-  Patches applied: 32
-  Patches skipped: 3
-  Patches ignored: 3
-  Duration: 12s
-```
+See [Advanced Topics](docs/advanced-topics.md#ignore-mechanism) for details.
 
 ## File Filtering
 
-You can use `FileFilter` and `FileFilterConfig` to create advanced file
-filtering rules:
+Filter files using include/exclude patterns:
 
 ```dart
-import 'package:codemod/codemod.dart';
-
 final filter = FileFilter(FileFilterConfig(
   includePatterns: ['lib/**/*.dart'],
   excludePatterns: ['lib/**/*.g.dart', 'lib/**/*.freezed.dart'],
-  ignoreHidden: true,
-  ignoreDartHidden: true,
 ));
 
-final filteredFiles = filter.filterFiles(allFiles);
+final filtered = filter.filterFiles(allFiles);
 ```
+
+## Combining Suggestors
+
+### Aggregate (Parallel)
+
+Run multiple suggestors in parallel:
+
+```dart
+exitCode = await runInteractiveCodemod(
+  files,
+  aggregate([
+    licenseHeaderInserter,
+    deprecationRemover,
+    versionUpdater,
+  ]),
+);
+```
+
+### Sequence (Sequential)
+
+Run suggestors in sequence (useful for dependencies):
+
+```dart
+exitCode = await runInteractiveCodemodSequence(
+  files,
+  [
+    collectorSuggestor,  // Collects information
+    transformerSuggestor, // Uses collected data
+  ],
+);
+```
+
+## Testing
+
+The `package:codemod/test.dart` library provides testing utilities:
+
+```dart
+import 'package:codemod/test.dart';
+import 'package:test/test.dart';
+
+test('MySuggestor', () async {
+  final context = await fileContextForTest('test.dart', '''
+oldMethod();
+''');
+  
+  final expected = '''
+newMethod();
+''';
+  
+  expectSuggestorGeneratesPatches(MySuggestor(), context, expected);
+});
+```
+
+See [API Reference](docs/api-reference.md#testing-utilities) for more details.
+
+## Requirements
+
+- Dart SDK >= 3.9.0
+
+## Use Cases
+
+- **Large-scale refactoring** - Update code patterns across codebases
+- **Dependency migrations** - Upgrade package versions, migrate APIs
+- **Code modernization** - Apply new language features, remove deprecated code
+- **Consistency enforcement** - Standardize code style, add license headers
+- **Automated fixes** - Apply common fixes automatically
+
+## CI/CD Integration
+
+### Dry Run in CI
+
+```yaml
+- name: Check for required changes
+  run: dart my_codemod.dart --fail-on-changes
+```
+
+### Automated Application
+
+```yaml
+- name: Apply codemod changes
+  run: dart my_codemod.dart --yes-to-all
+```
+
+See [Advanced Topics](docs/advanced-topics.md#integration-with-cicd) for complete examples.
+
+## Resources
+
+- 📖 [Full Documentation](docs/README.md)
+- 🚀 [Getting Started](docs/getting-started.md)
+- 🔧 [API Reference](docs/api-reference.md)
+- 💡 [Examples](docs/examples.md)
+- 🤖 [AI/LLM Guide](docs/ai-guide.md) - **Comprehensive 1160+ line guide for AI assistants**
+- 🎓 [Diff-to-Codemod Workshop](docs/diff-to-codemod-workshop.md) - Real-world scenarios
+- ✨ [Best Practices](docs/best-practices.md)
+- 🚀 [Advanced Topics](docs/advanced-topics.md)
 
 ## References
 
-- [over_react_codemod][over_react_codemod]: codemods for the `over_react` UI
-  library
+- [over_react_codemod][over_react_codemod] - Codemods for the `over_react` UI library
+- [analyzer][analyzer] - Dart analyzer package
 
 ## Credits
 
-- [facebook/codemod][facebook-codemod]: python codemod tool that this library
-  was based on
-
----
+- [facebook/codemod][facebook-codemod] - Python codemod tool that inspired this library
 
 ## Contributing
 
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 - **Run tests:** `dart test`
-
 - **Format code:** `dart format`
+- **Run analysis:** `dart analyze`
 
-- **Run static analysis:** `dart analyze`
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+
+---
 
 [analyzer]: https://pub.dartlang.org/packages/analyzer
 [facebook-codemod]: https://github.com/facebook/codemod
 [over_react_codemod]: https://github.com/Workiva/over_react_codemod
-[SourceFile]: https://pub.dartlang.org/documentation/source_span/latest/source_span/SourceFile-class.html
