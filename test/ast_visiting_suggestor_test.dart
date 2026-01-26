@@ -13,7 +13,7 @@
 // limitations under the License.
 
 @TestOn('vm')
-library codemod.test.ast_visiting_suggestor_test;
+library;
 
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
@@ -136,7 +136,7 @@ import 'package:meta/meta.dart';
 Never toss() { throw 'Thrown'; }
 ''';
       expectSuggestorGeneratesPatches(
-          AlwaysThrowsFixer(), context, expectedOutput);
+          AlwaysThrowsFixer().call, context, expectedOutput);
     });
   });
 }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 @TestOn('vm')
+library;
 import 'package:codemod/codemod.dart';
 import 'package:codemod/test.dart';
 import 'package:test/test.dart';
@@ -28,7 +29,7 @@ Stream<Patch> regexSubstituter(FileContext context) async* {
   for (final match in pattern.allMatches(context.sourceText)) {
     final line = match.group(0)!;
     final constraint = match.group(1)!;
-    final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
+    final updated = '${line.replaceFirst(constraint, targetConstraint)}\n';
 
     yield Patch(updated, match.start, match.end);
   }

@@ -286,7 +286,7 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
             // Don't apply the patches the user skipped.
             for (var patch in userSkipped) {
               appliedPatches.remove(patch);
-              logger.fine('skipping patch ${patch}');
+              logger.fine('skipping patch $patch');
             }
 
             applyPatchesAndSave(context.sourceFile, appliedPatches);
@@ -310,7 +310,7 @@ Future<int> _runInteractiveCodemod(Iterable<String> filePaths,
         // Don't apply the patches the user skipped.
         for (var patch in userSkipped) {
           appliedPatches.remove(patch);
-          logger.fine('skipping patch ${patch}');
+          logger.fine('skipping patch $patch');
         }
 
         applyPatchesAndSave(context.sourceFile, appliedPatches);

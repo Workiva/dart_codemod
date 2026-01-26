@@ -177,10 +177,7 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
       'startContextLineNumber': startContextLineNumber,
       'endContextLineNumber': endContextLineNumber,
     };
-    logger.fine('diff sizing:\n' +
-        diffSizingDebug.keys
-            .map((k) => '\t$k: ${diffSizingDebug[k]}')
-            .join('\n'));
+    logger.fine('diff sizing:\n${diffSizingDebug.keys.map((k) => '\t$k: ${diffSizingDebug[k]}').join('\n')}');
     logger.fine('old text:\n${sourceSpan.text}');
     logger.fine('new text:\n$updatedText');
 
@@ -232,7 +229,7 @@ class SourcePatch implements Patch, Comparable<SourcePatch> {
     if (startLine == endLine - 1) {
       return '${sourceSpan.sourceUrl}:${startLine + 1}';
     }
-    return '${sourceSpan.sourceUrl}:${startLine + 1}-${endLine}';
+    return '${sourceSpan.sourceUrl}:${startLine + 1}-$endLine';
   }
 
   @override

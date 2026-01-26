@@ -43,7 +43,7 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
         }
       }
     }
-    return super.visitBinaryExpression(node);
+    super.visitBinaryExpression(node);
   }
 }
 
@@ -72,7 +72,7 @@ var bar = (250 + 2).isOdd;
 var baz = 25.0 % 2 == 0;
 ''';
       expectSuggestorGeneratesPatches(
-          IsEvenOrOddSuggestor(), context, expectedOutput);
+          IsEvenOrOddSuggestor().call, context, expectedOutput);
     });
   });
 }

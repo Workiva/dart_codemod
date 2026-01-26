@@ -46,7 +46,7 @@ var bar = 'bar';''');
 var foo = 'foo';
 ''';
       expectSuggestorGeneratesPatches(
-          DeprecatedRemover(), context, expectedOutput);
+          DeprecatedRemover().call, context, expectedOutput);
     });
   });
 }

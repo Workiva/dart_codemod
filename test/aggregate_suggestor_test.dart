@@ -13,6 +13,7 @@
 // limitations under the License.
 
 @TestOn('vm')
+library;
 import 'package:codemod/codemod.dart';
 import 'package:codemod/test.dart';
 import 'package:mocktail/mocktail.dart';

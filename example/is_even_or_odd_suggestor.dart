@@ -30,14 +30,14 @@ class IsEvenOrOddSuggestor extends GeneralizingAstVisitor
         }
       }
     }
-    return super.visitBinaryExpression(node);
+    super.visitBinaryExpression(node);
   }
 }
 
 void main(List<String> args) async {
   exitCode = await runInteractiveCodemod(
     filePathsFromGlob(Glob('is_even_or_odd_suggestor_fixtures/**.dart')),
-    IsEvenOrOddSuggestor(),
+    IsEvenOrOddSuggestor().call,
     args: args,
   );
 }

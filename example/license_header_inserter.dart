@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// To run this example:
-///     $ cd example
-///     $ dart license_header_inserter.dart
-library dart_codemod.example.license_header_inserter;
+// To run this example:
+//     $ cd example
+//     $ dart license_header_inserter.dart
 
 import 'dart:io';
 

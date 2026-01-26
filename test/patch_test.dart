@@ -13,6 +13,7 @@
 // limitations under the License.
 
 @TestOn('vm')
+library;
 import 'package:io/ansi.dart';
 import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
@@ -128,8 +129,8 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'ADDED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'line 2;',
-          pls + 'li' + green.wrap('ADDED')! + 'ne 2;',
+          '${mns}line 2;',
+          '${pls}li${green.wrap('ADDED')!}ne 2;',
           '',
         ]);
       });
@@ -140,9 +141,9 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'ADDED1\nADDED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'line 2;',
-          pls + 'li' + green.wrap('ADDED1')!,
-          pls + green.wrap('ADDED2')! + 'ne 2;',
+          '${mns}line 2;',
+          '${pls}li${green.wrap('ADDED1')!}',
+          '$pls${green.wrap('ADDED2')!}ne 2;',
           '',
         ]);
       });
@@ -153,8 +154,8 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'REPLACED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'li' + red.wrap('ne')! + ' 2;',
-          pls + 'li' + green.wrap('REPLACED')! + ' 2;',
+          '${mns}li${red.wrap('ne')!} 2;',
+          '${pls}li${green.wrap('REPLACED')!} 2;',
           '',
         ]);
       });
@@ -167,9 +168,9 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'REPLACED');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'li' + red.wrap('ne 2;')!,
-          mns + red.wrap('l')! + 'ine 3;',
-          pls + 'li' + green.wrap('REPLACED')! + 'ine 3;',
+          '${mns}li${red.wrap('ne 2;')!}',
+          '$mns${red.wrap('l')!}ine 3;',
+          '${pls}li${green.wrap('REPLACED')!}ine 3;',
           '',
         ]);
       });
@@ -182,10 +183,10 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'li' + red.wrap('ne 2;')!,
-          mns + red.wrap('l')! + 'ine 3;',
-          pls + 'li' + green.wrap('REPLACED1')!,
-          pls + green.wrap('REPLACED2')! + 'ine 3;',
+          '${mns}li${red.wrap('ne 2;')!}',
+          '$mns${red.wrap('l')!}ine 3;',
+          '${pls}li${green.wrap('REPLACED1')!}',
+          '$pls${green.wrap('REPLACED2')!}ine 3;',
           '',
         ]);
       });
@@ -196,9 +197,9 @@ void main() {
         final patch = SourcePatch(sourceFile, span, 'REPLACED1\nREPLACED2');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'li' + red.wrap('ne')! + ' 2;',
-          pls + 'li' + green.wrap('REPLACED1')!,
-          pls + green.wrap('REPLACED2')! + ' 2;',
+          '${mns}li${red.wrap('ne')!} 2;',
+          '${pls}li${green.wrap('REPLACED1')!}',
+          '$pls${green.wrap('REPLACED2')!} 2;',
           '',
         ]);
       });
@@ -209,7 +210,7 @@ void main() {
         final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'li' + red.wrap('ne')! + ' 2;',
+          '${mns}li${red.wrap('ne')!} 2;',
           '',
         ]);
       });
@@ -221,8 +222,8 @@ void main() {
         final patch = SourcePatch(sourceFile, span, '');
         final diffLines = patch.renderDiff(1).split('\n');
         expect(diffLines, [
-          mns + 'li' + red.wrap('ne 2;')!,
-          mns + red.wrap('l')! + 'ine 3;',
+          '${mns}li${red.wrap('ne 2;')!}',
+          '$mns${red.wrap('l')!}ine 3;',
           '',
         ]);
       });
@@ -242,10 +243,10 @@ void main() {
           '~',
           '  line 1;',
           '  line 2;',
-          mns + 'li' + red.wrap('ne 3;')!,
-          mns + red.wrap('l')! + 'ine 4;',
-          pls + 'li' + green.wrap('R1')!,
-          pls + green.wrap('R2')! + 'ine 4;',
+          '${mns}li${red.wrap('ne 3;')!}',
+          '$mns${red.wrap('l')!}ine 4;',
+          '${pls}li${green.wrap('R1')!}',
+          '$pls${green.wrap('R2')!}ine 4;',
           '  line 5;',
           '  line 6;',
           '~',

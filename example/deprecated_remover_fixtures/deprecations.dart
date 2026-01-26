@@ -1,4 +1,4 @@
-@deprecated
+@Deprecated('This is deprecated')
 var foo = 'foo';
 
 /// Class doc comment.

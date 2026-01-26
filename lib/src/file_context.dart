@@ -79,10 +79,10 @@ class FileContext {
     var buffer = StringBuffer();
     for (var error in result.errors) {
       var location = result.lineInfo.getLocation(error.offset);
-      buffer.writeln('  ${error.errorCode.name}: ${error.message} - '
+      buffer.writeln('  ${error.diagnosticCode.lowerCaseName}: ${error.message} - '
           '${location.lineNumber}:${location.columnNumber}');
     }
     throw ArgumentError(
-        'File "${relativePath}" produced diagnostics when parsed:\n$buffer');
+        'File "$relativePath" produced diagnostics when parsed:\n$buffer');
   }
 }

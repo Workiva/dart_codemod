@@ -13,6 +13,7 @@
 // limitations under the License.
 
 @TestOn('vm')
+library;
 import 'dart:convert';
 import 'dart:io';
 
@@ -107,7 +108,7 @@ void main() {
     testCodemod('--help outputs usage help text', _afterNoPatches,
         args: ['--help'], body: (out, err) {
       expect(err,
-          contains('Global codemod options:\n\n' + codemodArgParser.usage));
+          contains('Global codemod options:\n\n${codemodArgParser.usage}'));
     });
 
     testCodemod(

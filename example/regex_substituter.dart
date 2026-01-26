@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// To run this example:
-///     $ cd example
-///     $ dart regex_substituter.dart
-library dart_codemod.example.regex_substituter;
+// To run this example:
+//     $ cd example
+//     $ dart regex_substituter.dart
 
 import 'dart:io';
 
@@ -35,7 +34,7 @@ Stream<Patch> regexSubstituter(FileContext context) async* {
   for (final match in pattern.allMatches(context.sourceText)) {
     final line = match.group(0)!;
     final constraint = match.group(1)!;
-    final updated = line.replaceFirst(constraint, targetConstraint) + '\n';
+    final updated = '${line.replaceFirst(constraint, targetConstraint)}\n';
 
     yield Patch(updated, match.start, match.end);
   }
