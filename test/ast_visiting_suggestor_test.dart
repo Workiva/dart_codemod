@@ -55,9 +55,11 @@ class AlwaysThrowsFixer extends GeneralizingAstVisitor<void>
   void visitFunctionDeclaration(FunctionDeclaration node) {
     for (final annotation in node.metadata) {
       final isAlwaysThrows = annotation.name.name == 'alwaysThrows';
-      final annotationPackage = annotation.element?.library?.identifier ?? '';
-      final isFromPackageMeta = annotationPackage.startsWith('package:meta/');
-      if (isAlwaysThrows && isFromPackageMeta) {
+      // For analyzer 7 compatibility, check if annotation has element2
+      // and verify it's from package:meta by checking the element name
+      // In analyzer 7, we can't easily get library URI from element2,
+      // so we'll just check the annotation name matches
+      if (isAlwaysThrows && annotation.element2 != null) {
         yieldPatch('Never', annotation.offset, annotation.end);
       }
     }

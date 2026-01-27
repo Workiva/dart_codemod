@@ -101,8 +101,10 @@ class FileContext {
     var buffer = StringBuffer();
     for (var error in result.errors) {
       var location = result.lineInfo.getLocation(error.offset);
+      // In analyzer 7, use errorCode instead of diagnosticCode
+      final errorCodeName = error.errorCode.name.toLowerCase();
       buffer.writeln(
-        '  ${error.diagnosticCode.lowerCaseName}: ${error.message} - '
+        '  $errorCodeName: ${error.message} - '
         '${location.lineNumber}:${location.columnNumber}',
       );
     }
