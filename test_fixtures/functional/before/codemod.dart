@@ -20,7 +20,6 @@ Future<void> run(List<String> args,
   );
 }
 
-@override
 Stream<Patch> testSuggestor(FileContext context) async* {
   if (context.sourceText.startsWith('skip')) return;
 

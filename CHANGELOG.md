@@ -1,3 +1,7 @@
+## [1.3.0](https://github.com/Workiva/dart_codemod/compare/1.2.0...1.3.0)
+
+- Allow up to analyzer 10
+
 ## [1.2.0](https://github.com/Workiva/dart_codemod/compare/1.1.0...1.2.0)
 
 - Add `PackageContextForTest` to `package:codemod/test.dart` to help test
