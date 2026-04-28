@@ -1,0 +1,14 @@
+pubspec.yaml
+  h_c284ada07cb5e3 13,27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "4702c95849da1fd341e64b49cac93fce7f0be037",
+  "prompts": {},
+  "humans": {
+    "h_c284ada07cb5e3": {
+      "author": "Rob Becker"
+    }
+  }
+}
