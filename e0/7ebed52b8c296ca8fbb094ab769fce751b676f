@@ -1,0 +1,14 @@
+.github/workflows/dart_ci.yaml
+  h_c284ada07cb5e3 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "e07ebed52b8c296ca8fbb094ab769fce751b676f",
+  "prompts": {},
+  "humans": {
+    "h_c284ada07cb5e3": {
+      "author": "Rob Becker"
+    }
+  }
+}
