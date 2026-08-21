@@ -11,12 +11,12 @@ on:
 jobs:
   # Runs analysis, formatting, and dependency validation against the dart source.
   checks:
-    uses: Workiva/gha-dart-oss/.github/workflows/checks.yaml@v0.1.14
+    uses: Workiva/gha-dart-oss/.github/workflows/checks.yaml@v3.0.1
 
   # Generates an SBOM and uploads it via anchore/sbom-action.
   build:
-    uses: Workiva/gha-dart-oss/.github/workflows/build.yaml@v0.1.14
+    uses: Workiva/gha-dart-oss/.github/workflows/build.yaml@v3.0.1
 
   # Runs unit tests in dev mode.
   unit-tests:
-    uses: Workiva/gha-dart-oss/.github/workflows/test-unit.yaml@v0.1.14
+    uses: Workiva/gha-dart-oss/.github/workflows/test-unit.yaml@v3.0.1
