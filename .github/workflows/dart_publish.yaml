@@ -13,4 +13,4 @@ permissions:
 jobs:
   # Generates and uploads an SBOM, then publishes to pub.dev.
   publish:
-    uses: Workiva/gha-dart-oss/.github/workflows/publish.yaml@v0.1.14
+    uses: Workiva/gha-dart-oss/.github/workflows/publish.yaml@v3.0.5
