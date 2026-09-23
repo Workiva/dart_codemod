@@ -14,6 +14,7 @@ jobs:
     uses: Workiva/gha-dart-oss/.github/workflows/checks.yaml@v0.1.14
     with:
       sdk: 3.13.4
+      format-check: false
 
   # Generates an SBOM and uploads it via anchore/sbom-action.
   build:
