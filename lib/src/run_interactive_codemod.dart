@@ -138,7 +138,7 @@ Future<int> runInteractiveCodemodSequence(
       }
       return ExitCode.success.code;
     }
-    return overrideAnsiOutput<Future<int>>(
+    return await overrideAnsiOutput<Future<int>>(
         stdout.supportsAnsiEscapes,
         () => _runInteractiveCodemod(filePaths, suggestors, parsedArgs,
             defaultYes: defaultYes,

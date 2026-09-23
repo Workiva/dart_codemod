@@ -16,6 +16,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:io/io.dart' show ExitCode;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -200,7 +201,7 @@ void main() {
 
     testCodemod(
         'quits codemod via prompts when overlapping patches', _afterNoPatches,
-        expectedExitCode: 255,
+        expectedExitCode: ExitCode.software.code,
         stdinLines: ['y', 'y', 'q'],
         script: 'codemod_overlapping_patches.dart', body: (out, err) {
       final file1Path = p.canonicalize(d.path('project/file1.txt'));

@@ -8,7 +8,6 @@ void main(List<String> args) async {
       args: args);
 }
 
-@override
 Stream<Patch> overlappingPatchSuggestor(FileContext context) async* {
   yield Patch('overlap', 1, 3);
   yield Patch('dov', 0, 3);

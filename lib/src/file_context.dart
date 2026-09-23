@@ -79,7 +79,8 @@ class FileContext {
     var buffer = StringBuffer();
     for (var error in result.errors) {
       var location = result.lineInfo.getLocation(error.offset);
-      buffer.writeln('  ${error.diagnosticCode.lowerCaseName}: ${error.message} - '
+      buffer.writeln(
+          '  ${error.diagnosticCode.lowerCaseName}: ${error.message} - '
           '${location.lineNumber}:${location.columnNumber}');
     }
     throw ArgumentError(
