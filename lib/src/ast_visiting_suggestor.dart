@@ -28,7 +28,8 @@ final _log = Logger('AstVisitingSuggestor');
 /// The easiest way to understand this pattern is to see an example. Consider
 /// the following suggestor that aims to remove all deprecated declarations:
 ///
-///     import 'package:analyzer/analyzer.dart';
+///     import 'package:analyzer/dart/ast/ast.dart';
+///     import 'package:analyzer/dart/ast/visitor.dart';
 ///     import 'package:codemod/codemod.dart';
 ///
 ///     class DeprecatedRemover extends GeneralizingAstVisitor

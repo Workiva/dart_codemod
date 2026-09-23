@@ -39,9 +39,9 @@ class Duplicate extends SimpleAstVisitor<void> with AstVisitingSuggestor {
 class LibNameDoubler extends RecursiveAstVisitor<void>
     with AstVisitingSuggestor {
   @override
-  void visitLibraryIdentifier(LibraryIdentifier node) {
-    for (final component in node.components) {
-      yieldPatch(component.name * 2, component.offset, component.end);
+  void visitDottedName(DottedName node) {
+    for (final token in node.tokens) {
+      yieldPatch(token.lexeme * 2, token.offset, token.end);
     }
   }
 }
