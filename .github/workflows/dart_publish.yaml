@@ -14,3 +14,5 @@ jobs:
   # Generates and uploads an SBOM, then publishes to pub.dev.
   publish:
     uses: Workiva/gha-dart-oss/.github/workflows/publish.yaml@v0.1.14
+    with:
+      sdk: 3.13.4
