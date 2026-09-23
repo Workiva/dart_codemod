@@ -12,7 +12,7 @@ Inspired by and based on [Facebook's `codemod` library][facebook-codemod].
 
 ## Requirements
 
-- Dart SDK `^3.11.0`
+- Dart SDK `^3.13.0`
 - [`package:analyzer`][analyzer] `^14.0.0`
 
 Suggestors that use the analyzer's AST or element APIs should be written
