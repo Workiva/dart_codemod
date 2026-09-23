@@ -20,12 +20,10 @@ import 'package:test/test.dart';
 
 class MockPatch extends Mock implements Patch {}
 
-@override
 Stream<Patch> fooSuggestor(_) async* {
   yield FooPatch();
 }
 
-@override
 Stream<Patch> barSuggestor(_) async* {
   yield BarPatch();
 }

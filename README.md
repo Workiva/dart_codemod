@@ -10,6 +10,16 @@ the AST.
 
 Inspired by and based on [Facebook's `codemod` library][facebook-codemod].
 
+## Requirements
+
+- Dart SDK `^3.13.0`
+- [`package:analyzer`][analyzer] `^14.0.0`
+
+Suggestors that use the analyzer's AST or element APIs should be written
+against analyzer 14. Notably, library names are represented by `DottedName`
+nodes (use `DottedName.tokens`), `LibraryIdentifier` no longer exists, and
+parse/analysis diagnostics expose `diagnosticCode` instead of `errorCode`.
+
 ## Demo
 
 ![demo](images/demo.gif)
@@ -21,10 +31,10 @@ apply code modifications and refactors via an interactive CLI. To that end,
 the following function is provided:
 
 ```dart
-Future<int> runInteractiveCodemod(Iterable<File> files, Suggestor suggestor);
+Future<int> runInteractiveCodemod(Iterable<String> filePaths, Suggestor suggestor);
 ```
 
-Calling this will tell codemod run the `suggestor` on each file in `files`. For
+Calling this will tell codemod run the `suggestor` on each file in `filePaths`. For
 each file, the suggestor will return a stream of patches that should be
 suggested to the user. As patches are suggested and accepted by the user,
 codemod handles applying them to the files and writing the result to disk.
@@ -122,7 +132,8 @@ Consider the following suggestor that removes all deprecated declarations
 (i.e. classes, constructors, variables, methods, etc.):
 
 ```dart
-import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:codemod/codemod.dart';
 
 class DeprecatedRemover extends GeneralizingAstVisitor<void>
@@ -326,8 +337,7 @@ Let's use the `DeprecatedRemover` suggestor example from above to demonstrate
 testing:
 
 ```dart
-import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -365,8 +375,7 @@ that has access to the whole package and its dependencies. You can then add
 source file(s) and use the wrapping `FileContext`s to test suggestors.
 
 ```dart
-import 'package:codemod/codemod.dart';
-import 'package:source_span/source_span.dart';
+import 'package:codemod/test.dart';
 import 'package:test/test.dart';
 
 void main() {
